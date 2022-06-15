@@ -3,7 +3,7 @@ module vm.instruction;
 import std.typecons;
 import std.conv;
 
-enum Opcode : ushort
+enum Opcode : ubyte
 {
     PUSHI, PUSHF, PUSHL,
     PUSHB,
@@ -23,22 +23,27 @@ enum Opcode : ushort
 class Instruction
 {
     Opcode mOpcode;
-    Nullable!string mOperand1;
-    Nullable!string mOperand2;
+    Nullable!byte mP1;
+    Nullable!short mP2;
+    Nullable!int mP3;
 
     this (Opcode opcode) {
         mOpcode = opcode;
     }
 
-    this (Opcode opcode, string operand1) {
+    this (Opcode opcode, byte operand) {
         mOpcode = opcode;
-        mOperand1 = operand1;
+        mP1 = operand;
     }
     
-    this (Opcode opcode, string operand1, string operand2) {
+    this (Opcode opcode, short operand) {
         mOpcode = opcode;
-        mOperand1 = operand1;
-        mOperand2 = operand2;
+        mP2 = operand;
+    }
+
+    this (Opcode opcode, int operand) {
+        mOpcode = opcode;
+        mP3 = operand;
     }
 
     Opcode getOpcode() {
@@ -46,17 +51,14 @@ class Instruction
     }
 
     override string toString() {
-        if (!mOperand1.isNull) {
-            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", operand: " ~ mOperand1.toString() ~ ")";
-        } else if (!mOperand2.isNull) {
-            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", operand: " ~ mOperand2.toString() ~ ")";
-        } else if (!mOperand1.isNull && !mOperand2.isNull) {
-            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", operand1: "
-                ~ mOperand1.toString() ~ ", operand2: " ~ mOperand2.toString() ~ ")";
+        auto operands = [mP1, mP2, mP3].filter!(p => !p.isNull)
+                                       .array
+                                       .map!(p => p.get)
+                                       .array;
+        if (operands.length > 0) {
+            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", operand: [" ~ to!string(operands) ~ "]" ~ ")";
         }
-
+        
         return "Instruction(opcode: " ~ to!string(mOpcode) ~ ")";
     }
 }
-
-

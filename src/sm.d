@@ -14,7 +14,12 @@ void run(string src) {
     //auto lines = new Parser(lexer).lines();
     //auto program = new Program(lines).generate();
     //auto machine = new Machine(program);
-    writeln(lexer.next());
+    auto t = lexer.next(); 
+    while (t.getType() != TokenType.EOF) {
+        writeln(t);
+        t = lexer.next();
+    }
+    writeln(t);
 }
 
 int main() {
