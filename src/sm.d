@@ -1,8 +1,8 @@
 module sm;
 
 import vm.error;
-//import vm.program;
-//import vm.machine;
+import vm.program;
+import vm.machine;
 import vm.lexer;
 
 import std.stdio;
@@ -11,15 +11,9 @@ import std.string : strip;
 
 void run(string src) {
     auto lexer = new Lexer(src);
-    //auto lines = new Parser(lexer).lines();
-    //auto program = new Program(lines).generate();
-    //auto machine = new Machine(program);
-    auto t = lexer.next(); 
-    while (t.getType() != TokenType.EOF) {
-        writeln(t);
-        t = lexer.next();
-    }
-    writeln(t);
+    auto program = new Program(lexer).generate();
+    auto machine = new Machine(program);
+    writeln(machine.run());
 }
 
 int main() {

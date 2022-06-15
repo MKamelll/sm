@@ -8,24 +8,25 @@ import std.stdio;
 
 import vm.error;
 
-enum TokenType
+enum TokenType : string
 {
-    PUSHI, PUSHF, PUSHL,
-    ADDI, ADDF, ADDL,
-    SUBI, SUBF, SUBL,
-    DEVI, DEVF, DEVL,
-    MULI, MULF, MULL,
-    CMPI, CMPF, CMPL,
+    PUSHI = "pushi", PUSHF = "pushf", PUSHL = "pushl",
+    ADDI = "addi", ADDF = "addf", ADDL = "addl",
+    SUBI = "subi", SUBF = "subf", SUBL = "subl",
+    DEVI = "devi", DEVF = "devf", DEVL = "devl",
+    MULI = "muli", MULF = "mulf", MULL = "mull",
+    CMPI = "cmpi", CMPF = "cmpf", CMPL = "cmpl",
+    DECI = "deci", DECF = "decf", DECL = "decl",
     
-    PUSHB,
+    PUSHB = "pushb",
     
-    JMP, JE, JG, JL, JGE, JLE,
+    JMP = "jmp", JE = "je", JG = "jg", JL = "jl", JGE = "jge", JLE = "jle",
 
-    INT, FLOAT, LONG,
+    INT = "int", FLOAT = "float", LONG = "long", BOOL = "bool",
     
-    IDENTIFIER, COLON, SEMICOLON, LEFT_BRACKET, RIGHT_BRACKET,
+    IDENTIFIER = "identifier", COLON = ":", SEMICOLON = ";", LEFT_BRACKET = "{", RIGHT_BRACKET = "}",
     
-    HALT, EOF
+    HALT = "halt", EOF = "EOF"
 }
 
 class Token
@@ -57,8 +58,25 @@ class Token
         mLexeme = Variant(lexeme);
     }
 
+    this (TokenType type, long lexeme) {
+        mType = type;
+        mLexeme = Variant(lexeme);
+    }
+
     TokenType getType() {
         return mType;
+    }
+
+    T getLexeme(T)(bool allowConversion = false) {
+        if (mLexeme.peek!T) return mLexeme.get!T;
+
+        if (allowConversion && mLexeme.convertsTo!T) {
+            return mLexeme.get!T;
+        }
+
+        writeln(mLexeme);
+        throw new VmError("Tried getting a lexeme of type '" ~ to!string(typeid(T))
+            ~ "'" ~ " but available type is " ~ mLexeme.type.toString());
     }
 
     override string toString() {
@@ -158,6 +176,10 @@ class Lexer
                         case "jge": return new Token(TokenType.JGE, ident);
                         case "jle": return new Token(TokenType.JLE, ident);
 
+                        case "deci": return new Token(TokenType.DECI, ident);
+                        case "decf": return new Token(TokenType.DECF, ident);
+                        case "decl": return new Token(TokenType.DECL, ident);
+
                         case "halt": return new Token(TokenType.HALT, ident);
                         
                         default: {
@@ -172,7 +194,11 @@ class Lexer
                     if (isFloat) {
                         return new Token(TokenType.FLOAT, to!float(num));
                     } else if (num.length > 10) {
-                        return new Token(TokenType.LONG, to!long(num));
+                        try {
+                            return new Token(TokenType.LONG, to!long(num));
+                        } catch (ConvOverflowException err) {
+                            throw new VmError("Provided operand is larger than long");
+                        }
                     } else {
                         return new Token(TokenType.INT, to!int(num));
                     }

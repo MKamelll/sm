@@ -58,8 +58,7 @@ class Machine
         try {
             mStack ~= Variant(to!T(value));
         } catch (Exception err) {
-            throw new VmError("Opcode '" ~ to!string(mCurrInstruction.mOpcode)
-                ~ "' doesn't match operand '" ~ mCurrInstruction.mOperand1.get ~ "': " ~ err.msg);
+             throw new VmError("Opcode '" ~ to!string(mCurrInstruction.mOpcode) ~  ", Invalid operand: " ~ err.msg);
         }
     }
 
@@ -70,8 +69,7 @@ class Machine
         try {
             mStack ~= Variant(to!T(value));
         } catch (Exception err) {
-            throw new VmError("Opcode '" ~ to!string(mCurrInstruction.mOpcode)
-                ~ "' doesn't match operand '" ~ mCurrInstruction.mOperand1.get ~ "': " ~ err.msg);
+            throw new VmError("Opcode '" ~ to!string(mCurrInstruction.mOpcode) ~  ", Invalid operand: " ~ err.msg);
         }
     }
 
@@ -93,8 +91,7 @@ class Machine
         try {
             mStack[index] = Variant(to!T(newVal));
         }  catch (Exception err) {
-            throw new VmError("Opcode '" ~ to!string(mCurrInstruction.mOpcode)
-                ~ "' doesn't match operand '" ~ mCurrInstruction.mOperand1.get ~ "': " ~ err.msg);
+            throw new VmError("Opcode '" ~ to!string(mCurrInstruction.mOpcode) ~  ", Invalid operand: " ~ err.msg);
         }
     }
 
@@ -157,7 +154,7 @@ class Machine
 
     // Int
     void pushInt() {
-        push!int(mCurrInstruction.mOperand1.get);
+        push!int(mCurrInstruction.mIntP.get);
     }
 
     void addInt() {
@@ -186,7 +183,7 @@ class Machine
     
     // Long
     void pushLong() {
-        push!long(mCurrInstruction.mOperand1.get);
+        push!long(mCurrInstruction.mLongP.get);
     }
 
     void addLong() {
@@ -215,7 +212,7 @@ class Machine
 
     // Float
     void pushFloat() {
-        push!float(mCurrInstruction.mOperand1.get);
+        push!float(mCurrInstruction.mFloatP.get);
     }
 
     void addFloat() {
@@ -244,14 +241,14 @@ class Machine
 
     // bool
     void pushBool() {
-        push!bool(mCurrInstruction.mOperand1.get);
+        push!bool(mCurrInstruction.mBoolP.get);
     }
 
     // jmp
     void jump() {
         pop!bool;
         
-        int destination = to!int(mCurrInstruction.mOperand1.get);
+        int destination = to!int(mCurrInstruction.mIntP.get);
         mIp = destination;
     }
 
@@ -259,7 +256,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0) {
-            int destinarion = to!int(mCurrInstruction.mOperand1.get);
+            int destinarion = to!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -268,7 +265,7 @@ class Machine
         int operand = pop!int;
 
         if (operand > 0) {
-            int destinarion = to!int(mCurrInstruction.mOperand1.get);
+            int destinarion = to!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -277,7 +274,7 @@ class Machine
         int operand = pop!int;
 
         if (operand < 0) {
-            int destinarion = to!int(mCurrInstruction.mOperand1.get);
+            int destinarion = to!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -286,7 +283,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand > 0) {
-            int destinarion = to!int(mCurrInstruction.mOperand1.get);
+            int destinarion = to!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -295,7 +292,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand < 0) {
-            int destinarion = to!int(mCurrInstruction.mOperand1.get);
+            int destinarion = to!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -342,7 +339,7 @@ class Machine
 
     // dec
     void decrementInt() {
-        push!int(mCurrInstruction.mOperand1.get);
+        push!int(mCurrInstruction.mIntP.get);
         int index = pop!int;
         int newVal = stackGetAt!int(index);
 
@@ -352,7 +349,7 @@ class Machine
     }
 
     void decrementFloat() {
-        push!int(mCurrInstruction.mOperand1.get);
+        push!int(mCurrInstruction.mIntP.get);
         int index = pop!int;
         float newVal = stackGetAt!float(index);
 
@@ -362,7 +359,7 @@ class Machine
     }
     
     void decrementLong() {
-        push!int(mCurrInstruction.mOperand1.get);
+        push!int(mCurrInstruction.mIntP.get);
         int index = pop!int;
         long newVal = stackGetAt!long(index);
 

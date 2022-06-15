@@ -14,19 +14,17 @@ import vm.lexer;
 class Program
 {
     private Instruction[] mProgram;
-    private Line[] mLines;
-    private Line mCurrLine;
-    private Line mPrevLine;
-    private int mCurrLineIndex;
+    private Lexer mLexer;
+    private Token mCurrToken;
+    private Token mPrevToken;
 
-    this (Line[] lines) {
-        mLines = lines;
-        mCurrLineIndex = 0;
-        mCurrLine = mLines[mCurrLineIndex];
+    this (Lexer lexer) {
+        mLexer = lexer;
+        mCurrToken = lexer.next();
     }
 
     bool isAtEnd() {
-        if (mCurrLineIndex < mLines.length) {
+        if (mCurrToken.getType() != TokenType.EOF) {
             return false;
         }
 
@@ -34,62 +32,59 @@ class Program
     }
 
     void advance() {
-        mPrevLine = mCurrLine;
-        mCurrLineIndex++;
-        if (!isAtEnd()) {
-            mCurrLine = mLines[mCurrLineIndex];
-        }
+        mPrevToken = mCurrToken;
+        mCurrToken = mLexer.next();
     }
 
-    bool match(string opcode) {
-        if (mCurrLine[0] == opcode) {
-            advance();
-            return true;
+    bool match(TokenType[] types...) {
+        foreach (type; types) {
+            if (mCurrToken.getType() == type) {
+                advance();
+                return true;
+            }
         }
 
         return false;
     }
 
-    string[] previous() {
-        return mPrevLine;
-    }
-
-    string prevOpCode() {
-        return previous()[0];
-    }
-
-    string[] prevOperands() {
-        return previous()[1..$];
-    }
-
-    string[] fetchOperands(int expectedNumber) {
-        string[] operands = prevOperands();
-        if (operands.length == expectedNumber) {
-            return operands;
+    VmError expected(TokenType type, string hint = "") {
+        if (hint.length > 0) {
+            return new VmError("Expected '" ~ type
+                ~ "' instead got '" ~ mCurrToken.getType() ~ "'" ~ "\n=> Hint: " ~ hint);    
         }
+        return new VmError("For '" ~ previous().getType() ~ "' expected '"
+            ~ type ~ "' instead got '" ~ mCurrToken.getType() ~ "'");
+    }
 
-        throw new VmError("For opcode '" ~ to!string(prevOpCode()) ~ "' expected '" ~ to!string(expectedNumber) 
-            ~ "' operands instead got '" ~ to!string(operands.length) ~ "'");
+    Token previous() {
+        return mPrevToken;
+    }
+
+    Token curr() {
+        return mCurrToken;
     }
 
     Instruction[] generate() {
         mProgram ~= generatePushInt();
+        if (!match(TokenType.SEMICOLON)) throw expected(TokenType.SEMICOLON);
         if (isAtEnd()) return mProgram;
         return generate();
     }
 
     // Generate Int
     Instruction generatePushInt() {
-        if (match("pushi")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.PUSHI, operands[0]);
+        if (match(TokenType.PUSHI)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT);
+
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.PUSHI, operand);
         }
 
         return generateAddInt();
     }
 
     Instruction generateAddInt() {
-        if (match("addi")) {
+        if (match(TokenType.ADDI)) {
             return new Instruction(Opcode.ADDI);
         }
 
@@ -97,7 +92,7 @@ class Program
     }
 
     Instruction generateMultiplyInt() {
-        if (match("muli")) {
+        if (match(TokenType.MULI)) {
             return new Instruction(Opcode.MULI);
         }
 
@@ -105,7 +100,7 @@ class Program
     }
 
     Instruction generateSubInt() {
-        if (match("subi")) {
+        if (match(TokenType.SUBI)) {
             return new Instruction(Opcode.SUBI);
         }
 
@@ -113,7 +108,7 @@ class Program
     }
 
     Instruction generateDivInt() {
-        if (match("divi")) {
+        if (match(TokenType.DEVI)) {
             return new Instruction(Opcode.DIVI);
         }
        
@@ -122,16 +117,18 @@ class Program
 
     // Generate Long
     Instruction generatePushLong() {
-        if (match("pushl")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.PUSHL, operands[0]);
+        if (match(TokenType.PUSHL)) {
+            if (!match(TokenType.LONG)) throw expected(TokenType.LONG);
+            
+            long operand = previous().getLexeme!long;
+            return new Instruction(Opcode.PUSHL, operand);
         }
 
         return generateAddLong();
     }
 
     Instruction generateAddLong() {
-        if (match("addl")) {
+        if (match(TokenType.ADDL)) {
             return new Instruction(Opcode.ADDL);
         }
 
@@ -139,7 +136,7 @@ class Program
     }
 
     Instruction generateMultiplyLong() {
-        if (match("mull")) {
+        if (match(TokenType.MULL)) {
             return new Instruction(Opcode.MULL);
         }
 
@@ -147,7 +144,7 @@ class Program
     }
 
     Instruction generateSubLong() {
-        if (match("subl")) {
+        if (match(TokenType.SUBL)) {
             return new Instruction(Opcode.SUBL);
         }
 
@@ -155,7 +152,7 @@ class Program
     }
 
     Instruction generateDivLong() {
-        if (match("divl")) {
+        if (match(TokenType.DEVL)) {
             return new Instruction(Opcode.DIVL);
         }
        
@@ -164,16 +161,18 @@ class Program
 
     // Generate Float
     Instruction generatePushFloat() {
-        if (match("pushf")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.PUSHF, operands[0]);
+        if (match(TokenType.PUSHF)) {
+            if (!match(TokenType.FLOAT)) throw expected(TokenType.FLOAT);
+            
+            float operand = previous().getLexeme!float;
+            return new Instruction(Opcode.PUSHF, operand);
         }
 
         return generateAddFloat();
     }
 
     Instruction generateAddFloat() {
-        if (match("addf")) {
+        if (match(TokenType.ADDF)) {
             return new Instruction(Opcode.ADDF);
         }
 
@@ -181,7 +180,7 @@ class Program
     }
 
     Instruction generateMultiplyFloat() {
-        if (match("mulf")) {
+        if (match(TokenType.MULF)) {
             return new Instruction(Opcode.MULF);
         }
 
@@ -189,7 +188,7 @@ class Program
     }
 
     Instruction generateSubFloat() {
-        if (match("subf")) {
+        if (match(TokenType.SUBF)) {
             return new Instruction(Opcode.SUBF);
         }
 
@@ -197,7 +196,7 @@ class Program
     }
 
     Instruction generateDivFloat() {
-        if (match("divf")) {
+        if (match(TokenType.DEVF)) {
             return new Instruction(Opcode.DIVF);
         }
 
@@ -206,9 +205,11 @@ class Program
 
     // bool
     Instruction generatePushBool() {
-        if (match("pushb")) {
-            string[] operand = fetchOperands(1);
-            return new Instruction(Opcode.PUSHB, operand[0]);
+        if (match(TokenType.PUSHB)) {
+            if (!match(TokenType.BOOL)) throw expected(TokenType.BOOL);
+
+            bool operand = previous().getLexeme!bool;
+            return new Instruction(Opcode.PUSHB, operand);
         }
         
         return generateJmp();
@@ -216,18 +217,23 @@ class Program
 
     // jmp
     Instruction generateJmp() {
-        if (match("jmp")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.JMP, operands[0]);
+        if (match(TokenType.JMP)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            
+            int operand = previous().getLexeme!int;
+            
+            return new Instruction(Opcode.JMP, operand);
         }
         
         return generateJe();
     }
 
     Instruction generateJe() {
-        if (match("je")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.JE, operands[0]);
+        if (match(TokenType.JE)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JE, operand);
         }
         
         return generateJg();
@@ -235,9 +241,11 @@ class Program
 
     
     Instruction generateJg() {
-        if (match("jg")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.JG, operands[0]);
+        if (match(TokenType.JG)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JG, operand);
         }
         
         return generateJl();
@@ -245,9 +253,11 @@ class Program
 
     
     Instruction generateJl() {
-        if (match("jl")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.JL, operands[0]);
+        if (match(TokenType.JL)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JL, operand);
         }
         
         return generateJge();
@@ -255,9 +265,11 @@ class Program
 
     
     Instruction generateJge() {
-        if (match("jge")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.JGE, operands[0]);
+        if (match(TokenType.JGE)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JGE, operand);
         }
         
         return generateJle();
@@ -265,9 +277,11 @@ class Program
 
     
     Instruction generateJle() {
-        if (match("jle")) {
-            string[] operands = fetchOperands(1);
-            return new Instruction(Opcode.JLE, operands[0]);
+        if (match(TokenType.JLE)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JLE, operand);
         }
         
         return generateCmpInt();
@@ -275,7 +289,7 @@ class Program
 
     // cmp
     Instruction generateCmpInt() {
-        if (match("cmpi")) {
+        if (match(TokenType.CMPI)) {
             return new Instruction(Opcode.CMPI);
         }
 
@@ -283,7 +297,7 @@ class Program
     }
 
     Instruction generateCmpFloat() {
-        if (match("cmpf")) {
+        if (match(TokenType.CMPF)) {
             return new Instruction(Opcode.CMPF);
         }
 
@@ -291,7 +305,7 @@ class Program
     }
 
     Instruction generateCmpLong() {
-        if (match("cmpl")) {
+        if (match(TokenType.CMPL)) {
             return new Instruction(Opcode.CMPL);
         }
 
@@ -300,27 +314,33 @@ class Program
 
     // dec
     Instruction generateDecInt() {
-        if (match("deci")) {
-            string[] operand = fetchOperands(1);
-            return new Instruction(Opcode.DECI, operand[0]);
+        if (match(TokenType.DECI)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.DECI, operand);
         }
 
         return generateDecFloat();
     }
 
     Instruction generateDecFloat() {
-        if (match("decf")) {
-            string[] operand = fetchOperands(1);
-            return new Instruction(Opcode.DECF, operand[0]);
+        if (match(TokenType.DECF)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.DECF, operand);
         }
 
         return generateDecLong();
     }
 
     Instruction generateDecLong() {
-        if (match("decl")) {
-            string[] operand = fetchOperands(1);
-            return new Instruction(Opcode.DECL, operand[0]);
+        if (match(TokenType.DECL)) {
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
+            
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.DECL, operand);            
         }
 
         return generateHalt();
@@ -328,10 +348,10 @@ class Program
 
     // halt
     Instruction generateHalt() {
-        if (match("halt")) {
+        if (match(TokenType.HALT)) {
             return new Instruction(Opcode.HALT);
         }
        
-       throw new VmError("Unknown opcode '" ~ mCurrLine[0] ~ "'");
+       throw new VmError("Unknown opcode '" ~ curr().getLexeme!string(true) ~ "'");
     }
 }

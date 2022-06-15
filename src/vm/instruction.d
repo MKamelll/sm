@@ -1,7 +1,9 @@
 module vm.instruction;
 
 import std.typecons;
+import std.algorithm;
 import std.conv;
+import std.array;
 
 enum Opcode : ubyte
 {
@@ -22,10 +24,14 @@ enum Opcode : ubyte
 
 class Instruction
 {
+    //TODO: constrain instruction to 4 bytes
     Opcode mOpcode;
-    Nullable!byte mP1;
-    Nullable!short mP2;
-    Nullable!int mP3;
+    Nullable!byte mByteP;
+    Nullable!bool mBoolP;
+    Nullable!short mShortP;
+    Nullable!int mIntP;
+    Nullable!float mFloatP;    
+    Nullable!long mLongP;
 
     this (Opcode opcode) {
         mOpcode = opcode;
@@ -33,17 +39,32 @@ class Instruction
 
     this (Opcode opcode, byte operand) {
         mOpcode = opcode;
-        mP1 = operand;
+        mByteP = operand;
     }
     
     this (Opcode opcode, short operand) {
         mOpcode = opcode;
-        mP2 = operand;
+        mShortP = operand;
     }
 
     this (Opcode opcode, int operand) {
         mOpcode = opcode;
-        mP3 = operand;
+        mIntP = operand;
+    }
+
+    this (Opcode opcode, float operand) {
+        mOpcode = opcode;
+        mFloatP = operand;
+    }
+
+    this (Opcode opcode, long operand) {
+        mOpcode = opcode;
+        mLongP = operand;
+    }
+
+    this (Opcode opcode, bool operand) {
+        mOpcode = opcode;
+        mBoolP = operand;
     }
 
     Opcode getOpcode() {
@@ -51,12 +72,18 @@ class Instruction
     }
 
     override string toString() {
-        auto operands = [mP1, mP2, mP3].filter!(p => !p.isNull)
-                                       .array
-                                       .map!(p => p.get)
-                                       .array;
-        if (operands.length > 0) {
-            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", operand: [" ~ to!string(operands) ~ "]" ~ ")";
+        if (!mByteP.isNull) {
+            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", byte: " ~ to!string(mByteP.get) ~ ")";    
+        } else if (!mShortP.isNull) {
+            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", short: " ~ to!string(mShortP.get) ~ ")";
+        } else if (!mIntP.isNull) {
+            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", int: " ~ to!string(mIntP.get) ~ ")";
+        } else if (!mFloatP.isNull) {
+            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", float: " ~ to!string(mFloatP.get) ~ ")";
+        } else if (!mBoolP.isNull) {
+            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", bool: " ~ to!string(mBoolP.get) ~ ")";
+        } else if (!mLongP.isNull) {
+            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", long: " ~ to!string(mLongP.get) ~ ")";
         }
         
         return "Instruction(opcode: " ~ to!string(mOpcode) ~ ")";
