@@ -14,7 +14,7 @@ import vm.program;
 class Machine
 {
     Instruction[] mInstructions;
-    Variant[] mData;
+    Variant[] mConstants;
     const MAX_CAPACITY = 100;
     Variant[] mStack;
     Instruction mCurrInstruction;
@@ -24,7 +24,7 @@ class Machine
 
     this (Program program) {
         mInstructions = program.getInstructions();
-        mData = program.getData();
+        mConstants = program.getConstants();
         mStack = [];
         mIp = 0;
         mSp = -1;
@@ -98,8 +98,8 @@ class Machine
         }
     }
 
-    T dataGetAt(T)(int index) {
-        Variant elm = mData[index];
+    T constantsGetAt(T)(int index) {
+        Variant elm = mConstants[index];
 
         if (elm.peek!T) return elm.get!T;
 
@@ -167,7 +167,7 @@ class Machine
 
     // Int
     void pushInt() {
-        push!int(dataGetAt!int(mCurrInstruction.mIntP.get));
+        push!int(constantsGetAt!int(mCurrInstruction.mIntP.get));
     }
 
     void addInt() {
@@ -196,7 +196,7 @@ class Machine
     
     // Long
     void pushLong() {
-        push!long(dataGetAt!long(mCurrInstruction.mIntP.get));
+        push!long(constantsGetAt!long(mCurrInstruction.mIntP.get));
     }
 
     void addLong() {
@@ -225,7 +225,7 @@ class Machine
 
     // Float
     void pushFloat() {
-        push!float(dataGetAt!float(mCurrInstruction.mIntP.get));
+        push!float(constantsGetAt!float(mCurrInstruction.mIntP.get));
     }
 
     void addFloat() {
@@ -254,13 +254,13 @@ class Machine
 
     // bool
     void pushBool() {
-        push!bool(dataGetAt!bool(mCurrInstruction.mIntP.get));
+        push!bool(constantsGetAt!bool(mCurrInstruction.mIntP.get));
     }
 
     // jmp
     void jump() {
         
-        int destination = dataGetAt!int(mCurrInstruction.mIntP.get);
+        int destination = mCurrInstruction.mIntP.get;
         mIp = destination;
     }
 
@@ -268,7 +268,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0) {
-            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
+            int destinarion = mCurrInstruction.mIntP.get;
             mIp = destinarion;
         }
     }
@@ -277,7 +277,7 @@ class Machine
         int operand = pop!int;
 
         if (operand > 0) {
-            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
+            int destinarion = mCurrInstruction.mIntP.get;
             mIp = destinarion;
         }
     }
@@ -286,7 +286,7 @@ class Machine
         int operand = pop!int;
 
         if (operand < 0) {
-            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
+            int destinarion = mCurrInstruction.mIntP.get;
             mIp = destinarion;
         }
     }
@@ -295,7 +295,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand > 0) {
-            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
+            int destinarion = mCurrInstruction.mIntP.get;
             mIp = destinarion;
         }
     }
@@ -304,7 +304,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand < 0) {
-            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
+            int destinarion = mCurrInstruction.mIntP.get;
             mIp = destinarion;
         }
     }
@@ -351,33 +351,21 @@ class Machine
 
     // dec
     void decrementInt() {
-        push!int(dataGetAt!int(mCurrInstruction.mIntP.get));
-        int index = pop!int;
-        int newVal = stackGetAt!int(index);
-
-        --newVal;
-        stackSetAt!int(index, newVal);
-        push!int(newVal);
+        int value = pop!int;
+        --value;
+        push!int(value);
     }
 
     void decrementFloat() {
-        push!float(dataGetAt!float(mCurrInstruction.mIntP.get));
-        int index = pop!int;
-        float newVal = stackGetAt!float(index);
-
-        --newVal;
-        stackSetAt!float(index, newVal);
-        push!float(newVal);
+        float value = pop!float;
+        --value;
+        push!float(value);
     }
     
     void decrementLong() {
-        push!long(dataGetAt!long(mCurrInstruction.mIntP.get));
-        int index = pop!int;
-        long newVal = stackGetAt!long(index);
-
-        --newVal;
-        stackSetAt!long(index, newVal);
-        push!long(newVal);
+        long value = pop!long;
+        --value;
+        push!long(value);
     }
 
     // halt

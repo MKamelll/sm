@@ -15,30 +15,30 @@ import vm.lexer;
 class Program
 {
     Instruction[] mInstructions;
-    Variant[] mData;
+    Variant[] mConstants;
 
     this (Instruction[] insts, Variant[] data) {
         mInstructions = insts;
-        mData = data;
+        mConstants = data;
     }
 
     Instruction[] getInstructions() {
         return mInstructions;
     }
 
-    Variant[] getData() {
-        return mData;
+    Variant[] getConstants() {
+        return mConstants;
     }
     
     override string toString() {
-        return "Program(instStack: " ~ to!string(mInstructions) ~ ", dataStack: " ~ to!string(mData) ~ ")";
+        return "Program(instStack: " ~ to!string(mInstructions) ~ ", dataStack: " ~ to!string(mConstants) ~ ")";
     }
 }
 
 class Generator
 {
     private Instruction[] mInstructions;
-    private Variant[] mData;
+    private Variant[] mConstants;
     private int mCurrDataIndex;
     private Lexer mLexer;
     private Token mCurrToken;
@@ -47,7 +47,7 @@ class Generator
     this (Lexer lexer) {
         mLexer = lexer;
         mInstructions = [];
-        mData = [];
+        mConstants = [];
         mCurrDataIndex = 0;
         mCurrToken = lexer.next();
     }
@@ -85,13 +85,9 @@ class Generator
             ~ type ~ "' instead got '" ~ mCurrToken.getType() ~ "'");
     }
 
-    int store(T)(T data) {
-        mData ~= Variant(data);
+    int addConstant(T)(T data) {
+        mConstants ~= Variant(data);
         return mCurrDataIndex++;
-    }
-
-    int currDataIndex() {
-        return mCurrDataIndex;
     }
 
     Token previous() {
@@ -105,7 +101,7 @@ class Generator
     Program generate() {
         mInstructions ~= generatePushInt();
         if (!match(TokenType.SEMICOLON)) throw expected(TokenType.SEMICOLON);
-        if (isAtEnd()) return new Program(mInstructions, mData);
+        if (isAtEnd()) return new Program(mInstructions, mConstants);
         return generate();
     }
 
@@ -114,7 +110,7 @@ class Generator
         if (match(TokenType.PUSHI)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT);
 
-            int index = store!int(previous().getLexeme!int);
+            int index = addConstant!int(previous().getLexeme!int);
             return new Instruction(Opcode.PUSHI, index);
         }
 
@@ -158,7 +154,7 @@ class Generator
         if (match(TokenType.PUSHL)) {
             if (!match(TokenType.LONG)) throw expected(TokenType.LONG);
             
-            int index = store!long(previous().getLexeme!long);
+            int index = addConstant!long(previous().getLexeme!long);
             return new Instruction(Opcode.PUSHL, index);
         }
 
@@ -202,7 +198,7 @@ class Generator
         if (match(TokenType.PUSHF)) {
             if (!match(TokenType.FLOAT)) throw expected(TokenType.FLOAT);
             
-            int index = store!float(previous().getLexeme!float);
+            int index = addConstant!float(previous().getLexeme!float);
             return new Instruction(Opcode.PUSHF, index);
         }
 
@@ -247,7 +243,7 @@ class Generator
             if (!match(TokenType.BOOL)) throw expected(TokenType.BOOL);
             
             // TODO: convert bool to int
-            int index = store!bool(previous().getLexeme!bool);
+            int index = addConstant!bool(previous().getLexeme!bool);
             return new Instruction(Opcode.PUSHB, index);
         }
         
@@ -259,8 +255,8 @@ class Generator
         if (match(TokenType.JMP)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int index = store!int(previous().getLexeme!int);
-            return new Instruction(Opcode.JMP, index);
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JMP, operand);
         }
         
         return generateJe();
@@ -270,8 +266,8 @@ class Generator
         if (match(TokenType.JE)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int index = store!int(previous().getLexeme!int);
-            return new Instruction(Opcode.JE, index);
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JE, operand);
         }
         
         return generateJg();
@@ -282,8 +278,8 @@ class Generator
         if (match(TokenType.JG)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int index = store!int(previous().getLexeme!int);
-            return new Instruction(Opcode.JG, index);
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JG, operand);
         }
         
         return generateJl();
@@ -294,8 +290,8 @@ class Generator
         if (match(TokenType.JL)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int index = store!int(previous().getLexeme!int);
-            return new Instruction(Opcode.JL, index);
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JL, operand);
         }
         
         return generateJge();
@@ -306,8 +302,8 @@ class Generator
         if (match(TokenType.JGE)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int index = store!int(previous().getLexeme!int);
-            return new Instruction(Opcode.JGE, index);
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JGE, operand);
         }
         
         return generateJle();
@@ -318,8 +314,8 @@ class Generator
         if (match(TokenType.JLE)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int index = store!int(previous().getLexeme!int);
-            return new Instruction(Opcode.JLE, index);
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.JLE, operand);
         }
         
         return generateCmpInt();
@@ -353,10 +349,7 @@ class Generator
     // dec
     Instruction generateDecInt() {
         if (match(TokenType.DECI)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
-            
-            int index = store!int(previous().getLexeme!int);
-            return new Instruction(Opcode.DECI, index);
+            return new Instruction(Opcode.DECI);
         }
 
         return generateDecFloat();
@@ -364,10 +357,7 @@ class Generator
 
     Instruction generateDecFloat() {
         if (match(TokenType.DECF)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
-            
-            int index = store!float(previous().getLexeme!int);
-            return new Instruction(Opcode.DECF, index);
+            return new Instruction(Opcode.DECF);
         }
 
         return generateDecLong();
@@ -375,10 +365,7 @@ class Generator
 
     Instruction generateDecLong() {
         if (match(TokenType.DECL)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
-            
-            int index = store!long(previous().getLexeme!int);
-            return new Instruction(Opcode.DECL, index);            
+            return new Instruction(Opcode.DECL);            
         }
 
         return generateHalt();
