@@ -11,7 +11,7 @@ import std.string : strip;
 
 void run(string src) {
     auto lexer = new Lexer(src);
-    auto program = new Program(lexer).generate();
+    auto program = new Generator(lexer).generate();
     auto machine = new Machine(program);
     writeln(machine.run());
 }

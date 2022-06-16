@@ -6,6 +6,7 @@ import std.string;
 import std.conv;
 import std.stdio;
 import std.typecons;
+import std.variant;
 
 import vm.instruction;
 import vm.error;
@@ -13,13 +14,41 @@ import vm.lexer;
 
 class Program
 {
-    private Instruction[] mProgram;
+    Instruction[] mInstructions;
+    Variant[] mData;
+
+    this (Instruction[] insts, Variant[] data) {
+        mInstructions = insts;
+        mData = data;
+    }
+
+    Instruction[] getInstructions() {
+        return mInstructions;
+    }
+
+    Variant[] getData() {
+        return mData;
+    }
+    
+    override string toString() {
+        return "Program(instStack: " ~ to!string(mInstructions) ~ ", dataStack: " ~ to!string(mData) ~ ")";
+    }
+}
+
+class Generator
+{
+    private Instruction[] mInstructions;
+    private Variant[] mData;
+    private int mCurrDataIndex;
     private Lexer mLexer;
     private Token mCurrToken;
     private Token mPrevToken;
 
     this (Lexer lexer) {
         mLexer = lexer;
+        mInstructions = [];
+        mData = [];
+        mCurrDataIndex = 0;
         mCurrToken = lexer.next();
     }
 
@@ -56,6 +85,15 @@ class Program
             ~ type ~ "' instead got '" ~ mCurrToken.getType() ~ "'");
     }
 
+    int store(T)(T data) {
+        mData ~= Variant(data);
+        return mCurrDataIndex++;
+    }
+
+    int currDataIndex() {
+        return mCurrDataIndex;
+    }
+
     Token previous() {
         return mPrevToken;
     }
@@ -64,10 +102,10 @@ class Program
         return mCurrToken;
     }
 
-    Instruction[] generate() {
-        mProgram ~= generatePushInt();
+    Program generate() {
+        mInstructions ~= generatePushInt();
         if (!match(TokenType.SEMICOLON)) throw expected(TokenType.SEMICOLON);
-        if (isAtEnd()) return mProgram;
+        if (isAtEnd()) return new Program(mInstructions, mData);
         return generate();
     }
 
@@ -76,8 +114,8 @@ class Program
         if (match(TokenType.PUSHI)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT);
 
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.PUSHI, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.PUSHI, index);
         }
 
         return generateAddInt();
@@ -120,8 +158,8 @@ class Program
         if (match(TokenType.PUSHL)) {
             if (!match(TokenType.LONG)) throw expected(TokenType.LONG);
             
-            long operand = previous().getLexeme!long;
-            return new Instruction(Opcode.PUSHL, operand);
+            int index = store!long(previous().getLexeme!long);
+            return new Instruction(Opcode.PUSHL, index);
         }
 
         return generateAddLong();
@@ -164,8 +202,8 @@ class Program
         if (match(TokenType.PUSHF)) {
             if (!match(TokenType.FLOAT)) throw expected(TokenType.FLOAT);
             
-            float operand = previous().getLexeme!float;
-            return new Instruction(Opcode.PUSHF, operand);
+            int index = store!float(previous().getLexeme!float);
+            return new Instruction(Opcode.PUSHF, index);
         }
 
         return generateAddFloat();
@@ -207,9 +245,10 @@ class Program
     Instruction generatePushBool() {
         if (match(TokenType.PUSHB)) {
             if (!match(TokenType.BOOL)) throw expected(TokenType.BOOL);
-
-            bool operand = previous().getLexeme!bool;
-            return new Instruction(Opcode.PUSHB, operand);
+            
+            // TODO: convert bool to int
+            int index = store!bool(previous().getLexeme!bool);
+            return new Instruction(Opcode.PUSHB, index);
         }
         
         return generateJmp();
@@ -220,9 +259,8 @@ class Program
         if (match(TokenType.JMP)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int operand = previous().getLexeme!int;
-            
-            return new Instruction(Opcode.JMP, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.JMP, index);
         }
         
         return generateJe();
@@ -232,8 +270,8 @@ class Program
         if (match(TokenType.JE)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.JE, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.JE, index);
         }
         
         return generateJg();
@@ -244,8 +282,8 @@ class Program
         if (match(TokenType.JG)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.JG, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.JG, index);
         }
         
         return generateJl();
@@ -256,8 +294,8 @@ class Program
         if (match(TokenType.JL)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.JL, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.JL, index);
         }
         
         return generateJge();
@@ -268,8 +306,8 @@ class Program
         if (match(TokenType.JGE)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.JGE, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.JGE, index);
         }
         
         return generateJle();
@@ -280,8 +318,8 @@ class Program
         if (match(TokenType.JLE)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.JLE, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.JLE, index);
         }
         
         return generateCmpInt();
@@ -317,8 +355,8 @@ class Program
         if (match(TokenType.DECI)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.DECI, operand);
+            int index = store!int(previous().getLexeme!int);
+            return new Instruction(Opcode.DECI, index);
         }
 
         return generateDecFloat();
@@ -328,8 +366,8 @@ class Program
         if (match(TokenType.DECF)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.DECF, operand);
+            int index = store!float(previous().getLexeme!int);
+            return new Instruction(Opcode.DECF, index);
         }
 
         return generateDecLong();
@@ -339,8 +377,8 @@ class Program
         if (match(TokenType.DECL)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to decrement");
             
-            int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.DECL, operand);            
+            int index = store!long(previous().getLexeme!int);
+            return new Instruction(Opcode.DECL, index);            
         }
 
         return generateHalt();

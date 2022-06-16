@@ -63,6 +63,11 @@ class Token
         mLexeme = Variant(lexeme);
     }
 
+    this (TokenType type, bool lexeme) {
+        mType = type;
+        mLexeme = Variant(lexeme);
+    }
+
     TokenType getType() {
         return mType;
     }
@@ -179,6 +184,8 @@ class Lexer
                         case "deci": return new Token(TokenType.DECI, ident);
                         case "decf": return new Token(TokenType.DECF, ident);
                         case "decl": return new Token(TokenType.DECL, ident);
+                        case "true": return new Token(TokenType.BOOL, true);
+                        case "false": return new Token(TokenType.BOOL, false);
 
                         case "halt": return new Token(TokenType.HALT, ident);
                         

@@ -9,10 +9,12 @@ import std.array;
 
 import vm.instruction;
 import vm.error;
+import vm.program;
 
 class Machine
 {
-    Instruction[] mProgram;
+    Instruction[] mInstructions;
+    Variant[] mData;
     const MAX_CAPACITY = 100;
     Variant[] mStack;
     Instruction mCurrInstruction;
@@ -20,8 +22,9 @@ class Machine
     int mSp;
     bool mHalt;
 
-    this (Instruction[] program) {
-        mProgram = program;
+    this (Program program) {
+        mInstructions = program.getInstructions();
+        mData = program.getData();
         mStack = [];
         mIp = 0;
         mSp = -1;
@@ -29,7 +32,7 @@ class Machine
     }
 
     bool isAtEnd() {
-        if (!mHalt && mIp < mProgram.length) {
+        if (!mHalt && mIp < mInstructions.length) {
             return false;
         }
 
@@ -74,7 +77,7 @@ class Machine
     }
 
     Instruction advance() {
-        mCurrInstruction = mProgram[mIp++];
+        mCurrInstruction = mInstructions[mIp++];
         return mCurrInstruction;
     }
 
@@ -93,6 +96,16 @@ class Machine
         }  catch (Exception err) {
             throw new VmError("Opcode '" ~ to!string(mCurrInstruction.mOpcode) ~  ", Invalid operand: " ~ err.msg);
         }
+    }
+
+    T dataGetAt(T)(int index) {
+        Variant elm = mData[index];
+
+        if (elm.peek!T) return elm.get!T;
+
+        throw new VmError("For opcode '" ~ to!string(mCurrInstruction.mOpcode)
+            ~ "' tried to get '" ~ to!string(typeid(T))
+            ~ "' from the data stack, but available '" ~ to!string(elm.type) ~ "'");
     }
 
     Variant[] run() {
@@ -154,7 +167,7 @@ class Machine
 
     // Int
     void pushInt() {
-        push!int(mCurrInstruction.mIntP.get);
+        push!int(dataGetAt!int(mCurrInstruction.mIntP.get));
     }
 
     void addInt() {
@@ -183,7 +196,7 @@ class Machine
     
     // Long
     void pushLong() {
-        push!long(mCurrInstruction.mLongP.get);
+        push!long(dataGetAt!long(mCurrInstruction.mIntP.get));
     }
 
     void addLong() {
@@ -212,7 +225,7 @@ class Machine
 
     // Float
     void pushFloat() {
-        push!float(mCurrInstruction.mFloatP.get);
+        push!float(dataGetAt!float(mCurrInstruction.mIntP.get));
     }
 
     void addFloat() {
@@ -241,14 +254,13 @@ class Machine
 
     // bool
     void pushBool() {
-        push!bool(mCurrInstruction.mBoolP.get);
+        push!bool(dataGetAt!bool(mCurrInstruction.mIntP.get));
     }
 
     // jmp
     void jump() {
-        pop!bool;
         
-        int destination = to!int(mCurrInstruction.mIntP.get);
+        int destination = dataGetAt!int(mCurrInstruction.mIntP.get);
         mIp = destination;
     }
 
@@ -256,7 +268,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0) {
-            int destinarion = to!int(mCurrInstruction.mIntP.get);
+            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -265,7 +277,7 @@ class Machine
         int operand = pop!int;
 
         if (operand > 0) {
-            int destinarion = to!int(mCurrInstruction.mIntP.get);
+            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -274,7 +286,7 @@ class Machine
         int operand = pop!int;
 
         if (operand < 0) {
-            int destinarion = to!int(mCurrInstruction.mIntP.get);
+            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -283,7 +295,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand > 0) {
-            int destinarion = to!int(mCurrInstruction.mIntP.get);
+            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -292,7 +304,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand < 0) {
-            int destinarion = to!int(mCurrInstruction.mIntP.get);
+            int destinarion = dataGetAt!int(mCurrInstruction.mIntP.get);
             mIp = destinarion;
         }
     }
@@ -339,7 +351,7 @@ class Machine
 
     // dec
     void decrementInt() {
-        push!int(mCurrInstruction.mIntP.get);
+        push!int(dataGetAt!int(mCurrInstruction.mIntP.get));
         int index = pop!int;
         int newVal = stackGetAt!int(index);
 
@@ -349,7 +361,7 @@ class Machine
     }
 
     void decrementFloat() {
-        push!int(mCurrInstruction.mIntP.get);
+        push!float(dataGetAt!float(mCurrInstruction.mIntP.get));
         int index = pop!int;
         float newVal = stackGetAt!float(index);
 
@@ -359,7 +371,7 @@ class Machine
     }
     
     void decrementLong() {
-        push!int(mCurrInstruction.mIntP.get);
+        push!long(dataGetAt!long(mCurrInstruction.mIntP.get));
         int index = pop!int;
         long newVal = stackGetAt!long(index);
 
