@@ -15,30 +15,23 @@ import vm.lexer;
 class Program
 {
     Instruction[] mInstructions;
-    Variant[] mConstants;
 
-    this (Instruction[] insts, Variant[] data) {
+    this (Instruction[] insts) {
         mInstructions = insts;
-        mConstants = data;
     }
 
     Instruction[] getInstructions() {
         return mInstructions;
     }
-
-    Variant[] getConstants() {
-        return mConstants;
-    }
     
     override string toString() {
-        return "Program(instStack: " ~ to!string(mInstructions) ~ ", dataStack: " ~ to!string(mConstants) ~ ")";
+        return "Program(" ~ to!string(mInstructions) ~ ")";
     }
 }
 
 class Generator
 {
     private Instruction[] mInstructions;
-    private Variant[] mConstants;
     private int mCurrDataIndex;
     private Lexer mLexer;
     private Token mCurrToken;
@@ -47,7 +40,6 @@ class Generator
     this (Lexer lexer) {
         mLexer = lexer;
         mInstructions = [];
-        mConstants = [];
         mCurrDataIndex = 0;
         mCurrToken = lexer.next();
     }
@@ -85,11 +77,6 @@ class Generator
             ~ type ~ "' instead got '" ~ mCurrToken.getType() ~ "'");
     }
 
-    int addConstant(T)(T data) {
-        mConstants ~= Variant(data);
-        return mCurrDataIndex++;
-    }
-
     Token previous() {
         return mPrevToken;
     }
@@ -101,7 +88,7 @@ class Generator
     Program generate() {
         mInstructions ~= generatePushInt();
         if (!match(TokenType.SEMICOLON)) throw expected(TokenType.SEMICOLON);
-        if (isAtEnd()) return new Program(mInstructions, mConstants);
+        if (isAtEnd()) return new Program(mInstructions);
         return generate();
     }
 
@@ -110,8 +97,8 @@ class Generator
         if (match(TokenType.PUSHI)) {
             if (!match(TokenType.INT)) throw expected(TokenType.INT);
 
-            int index = addConstant!int(previous().getLexeme!int);
-            return new Instruction(Opcode.PUSHI, index);
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.PUSHI, operand);
         }
 
         return generateAddInt();
@@ -154,8 +141,8 @@ class Generator
         if (match(TokenType.PUSHL)) {
             if (!match(TokenType.LONG)) throw expected(TokenType.LONG);
             
-            int index = addConstant!long(previous().getLexeme!long);
-            return new Instruction(Opcode.PUSHL, index);
+            long operand = previous().getLexeme!long;
+            return new Instruction(Opcode.PUSHL, operand);
         }
 
         return generateAddLong();
@@ -198,8 +185,8 @@ class Generator
         if (match(TokenType.PUSHF)) {
             if (!match(TokenType.FLOAT)) throw expected(TokenType.FLOAT);
             
-            int index = addConstant!float(previous().getLexeme!float);
-            return new Instruction(Opcode.PUSHF, index);
+            float operand = previous().getLexeme!float;
+            return new Instruction(Opcode.PUSHF, operand);
         }
 
         return generateAddFloat();
@@ -242,9 +229,8 @@ class Generator
         if (match(TokenType.PUSHB)) {
             if (!match(TokenType.BOOL)) throw expected(TokenType.BOOL);
             
-            // TODO: convert bool to int
-            int index = addConstant!bool(previous().getLexeme!bool);
-            return new Instruction(Opcode.PUSHB, index);
+            int operand = previous().getLexeme!bool;
+            return new Instruction(Opcode.PUSHB, operand);
         }
         
         return generateJmp();
@@ -376,8 +362,8 @@ class Generator
         if (match(TokenType.LOADG)) {
             if (!match(TokenType.STRING)) throw expected(TokenType.STRING, "You need to provide a variable to load");
 
-            int index = addConstant!string(previous().getLexeme!string);
-            return new Instruction(Opcode.LOADG, index);
+            string operand = previous().getLexeme!string;
+            return new Instruction(Opcode.LOADG, operand);
         }
 
         return generateStoreGlobal();
@@ -387,8 +373,8 @@ class Generator
         if (match(TokenType.STOREG)) {
             if (!match(TokenType.STRING)) throw expected(TokenType.STRING, "You need to provide a variable to store");
             
-            int index = addConstant!string(previous().getLexeme!string);
-            return new Instruction(Opcode.STOREG, index);
+            string operand = previous().getLexeme!string;
+            return new Instruction(Opcode.STOREG, operand);
         }
 
         return generateHalt();

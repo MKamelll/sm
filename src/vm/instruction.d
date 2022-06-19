@@ -41,12 +41,27 @@ class Instruction
         mOperand = Variant(operand);
     }
 
-    this (Opcode opcode, string operand) {
+    this (Opcode opcode, long operand) {
+        mOpcode = opcode;
+        mOperand = Variant(operand);
+    }
+
+    this (Opcode opcode, float operand) {
         mOpcode = opcode;
         mOperand = Variant(operand);
     }
 
     this (Opcode opcode, double operand) {
+        mOpcode = opcode;
+        mOperand = Variant(operand);
+    }
+
+    this (Opcode opcode, bool operand) {
+        mOpcode = opcode;
+        mOperand = Variant(operand);
+    }
+
+    this (Opcode opcode, string operand) {
         mOpcode = opcode;
         mOperand = Variant(operand);
     }

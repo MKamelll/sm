@@ -14,7 +14,6 @@ import vm.program;
 class Machine
 {
     Instruction[] mInstructions;
-    Variant[] mConstants;
     const MAX_CAPACITY = 100;
     Variant[] mStack;
     Instruction mCurrInstruction;
@@ -25,7 +24,6 @@ class Machine
 
     this (Program program) {
         mInstructions = program.getInstructions();
-        mConstants = program.getConstants();
         mStack = [];
         mIp = 0;
         mSp = -1;
@@ -99,16 +97,6 @@ class Machine
         }
     }
 
-    T constantsGetAt(T)(int index) {
-        Variant elm = mConstants[index];
-
-        if (elm.peek!T) return elm.get!T;
-
-        throw new VmError("For opcode '" ~ to!string(mCurrInstruction.mOpcode)
-            ~ "' tried to get '" ~ to!string(typeid(T))
-            ~ "' from the data stack, but available '" ~ to!string(elm.type) ~ "'");
-    }
-
     Variant[] run() {
 
         while (!isAtEnd()) {
@@ -173,7 +161,7 @@ class Machine
 
     // Int
     void pushInt() {
-        push!int(constantsGetAt!int(mCurrInstruction.getOperand!int));
+        push!int(mCurrInstruction.getOperand!int);
     }
 
     void addInt() {
@@ -202,7 +190,7 @@ class Machine
     
     // Long
     void pushLong() {
-        push!long(constantsGetAt!long(mCurrInstruction.getOperand!int));
+        push!long(mCurrInstruction.getOperand!long);
     }
 
     void addLong() {
@@ -231,7 +219,7 @@ class Machine
 
     // Float
     void pushFloat() {
-        push!float(constantsGetAt!float(mCurrInstruction.getOperand!int));
+        push!float(mCurrInstruction.getOperand!float);
     }
 
     void addFloat() {
@@ -260,7 +248,7 @@ class Machine
 
     // bool
     void pushBool() {
-        push!bool(constantsGetAt!bool(mCurrInstruction.getOperand!int));
+        push!bool(mCurrInstruction.getOperand!bool);
     }
 
     // jmp
@@ -376,7 +364,7 @@ class Machine
 
     // loadg
     void loadGlobal() {
-        string var = constantsGetAt!string(mCurrInstruction.getOperand!int);
+        string var = mCurrInstruction.getOperand!string;
 
         Variant * value = (var in mGlobals);
         if (value !is null) {
@@ -390,7 +378,7 @@ class Machine
     // storeg
     void storeGlobal() {
         int value = pop!int;
-        string var = constantsGetAt!string(mCurrInstruction.getOperand!int);
+        string var = mCurrInstruction.getOperand!string;
         mGlobals[var] = Variant(value);
     }
 
