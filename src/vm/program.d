@@ -368,6 +368,29 @@ class Generator
             return new Instruction(Opcode.DECL);            
         }
 
+        return generateLoadGlobal();
+    }
+
+    // load, store from globals
+    Instruction generateLoadGlobal() {
+        if (match(TokenType.LOADG)) {
+            if (!match(TokenType.STRING)) throw expected(TokenType.STRING, "You need to provide a variable to load");
+
+            int index = addConstant!string(previous().getLexeme!string);
+            return new Instruction(Opcode.LOADG, index);
+        }
+
+        return generateStoreGlobal();
+    }
+
+    Instruction generateStoreGlobal() {
+        if (match(TokenType.STOREG)) {
+            if (!match(TokenType.STRING)) throw expected(TokenType.STRING, "You need to provide a variable to store");
+            
+            int index = addConstant!string(previous().getLexeme!string);
+            return new Instruction(Opcode.STOREG, index);
+        }
+
         return generateHalt();
     }
 

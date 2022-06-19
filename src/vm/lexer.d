@@ -21,8 +21,9 @@ enum TokenType : string
     PUSHB = "pushb",
     
     JMP = "jmp", JE = "je", JG = "jg", JL = "jl", JGE = "jge", JLE = "jle",
+    LOADG = "loadg", STOREG = "storeg",
 
-    INT = "int", FLOAT = "float", LONG = "long", BOOL = "bool",
+    INT = "int", FLOAT = "float", LONG = "long", BOOL = "bool", STRING = "string",
     
     IDENTIFIER = "identifier", COLON = ":", SEMICOLON = ";", LEFT_BRACKET = "{", RIGHT_BRACKET = "}",
     
@@ -104,14 +105,14 @@ class Lexer
         mCurrChar = mSrc[mCurrIndex];
     }
 
-    void advance() {
+    private void advance() {
         mCurrIndex++;
         if (!isAtEnd()) {
             mCurrChar = mSrc[mCurrIndex];
         }
     }
 
-    bool isAtEnd() {
+    private bool isAtEnd() {
         if (mCurrIndex < mSrc.length) {
             return false;
         }
@@ -141,6 +142,11 @@ class Lexer
             case ';': {
                 advance();
                 return new Token(TokenType.SEMICOLON, ';');
+            }
+
+            case '"': {
+                string str  = aString();
+                return new Token(TokenType.STRING, str);
             }
 
             case ' ': case '\t': advance(); return next();
@@ -187,6 +193,9 @@ class Lexer
                         case "true": return new Token(TokenType.BOOL, true);
                         case "false": return new Token(TokenType.BOOL, false);
 
+                        case "loadg": return new Token(TokenType.LOADG, ident);
+                        case "storeg": return new Token(TokenType.STOREG, ident);
+
                         case "halt": return new Token(TokenType.HALT, ident);
                         
                         default: {
@@ -217,7 +226,7 @@ class Lexer
         throw new VmError("Unknown token: '" ~ mCurrChar ~ "'");
     }
 
-    string anIdentifier() {
+    private string anIdentifier() {
         string result;
         while (!isAtEnd()) {
             if (!isAlphaNum(mCurrChar)) break;
@@ -228,7 +237,7 @@ class Lexer
         return result;
     }
 
-    Tuple!(string, bool) aNumber() {
+    private Tuple!(string, bool) aNumber() {
         string result;
         bool isFloat = false;
         while (!isAtEnd()) {
@@ -245,5 +254,29 @@ class Lexer
         }
         
         return tuple(result, isFloat);
+    }
+
+    private string aString() {
+        string result;
+        
+        // pass "
+        advance();
+        
+        while (!isAtEnd()) {
+            if (mCurrChar == '\\') {
+                advance();
+                result ~= mCurrChar;
+                advance();
+            }
+            if (mCurrChar == '"') break;
+            
+            result ~= mCurrChar;
+            advance();
+        }
+
+        // pass "
+        advance();
+
+        return result;
     }    
 }

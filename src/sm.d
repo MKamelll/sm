@@ -13,7 +13,7 @@ void run(string src) {
     auto lexer = new Lexer(src);
     auto program = new Generator(lexer).generate();
     auto machine = new Machine(program);
-    writeln(machine.run());
+    machine.run();
 }
 
 int main() {

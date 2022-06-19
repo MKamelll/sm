@@ -18,6 +18,7 @@ class Machine
     const MAX_CAPACITY = 100;
     Variant[] mStack;
     Instruction mCurrInstruction;
+    Variant[string] mGlobals;
     int mIp;
     int mSp;
     bool mHalt;
@@ -155,11 +156,16 @@ class Machine
                 case Opcode.DECI: decrementInt(); break;
                 case Opcode.DECF: decrementFloat(); break;
                 case Opcode.DECL: decrementLong(); break;
+
+                // loadg, storeg
+                case Opcode.LOADG: loadGlobal(); break;
+                case Opcode.STOREG: storeGlobal(); break;
                 
                 // halt
                 case Opcode.HALT: halt(); break;
                 default: throw new VmError("Unkown Machine Instruction: '" ~ to!string(curr.getOpcode()) ~ "'");
             }
+            debugPrint();
         }
         
         return mStack;
@@ -167,7 +173,7 @@ class Machine
 
     // Int
     void pushInt() {
-        push!int(constantsGetAt!int(mCurrInstruction.mIntP.get));
+        push!int(constantsGetAt!int(mCurrInstruction.getOperand!int));
     }
 
     void addInt() {
@@ -196,7 +202,7 @@ class Machine
     
     // Long
     void pushLong() {
-        push!long(constantsGetAt!long(mCurrInstruction.mIntP.get));
+        push!long(constantsGetAt!long(mCurrInstruction.getOperand!int));
     }
 
     void addLong() {
@@ -225,7 +231,7 @@ class Machine
 
     // Float
     void pushFloat() {
-        push!float(constantsGetAt!float(mCurrInstruction.mIntP.get));
+        push!float(constantsGetAt!float(mCurrInstruction.getOperand!int));
     }
 
     void addFloat() {
@@ -254,13 +260,13 @@ class Machine
 
     // bool
     void pushBool() {
-        push!bool(constantsGetAt!bool(mCurrInstruction.mIntP.get));
+        push!bool(constantsGetAt!bool(mCurrInstruction.getOperand!int));
     }
 
     // jmp
     void jump() {
         
-        int destination = mCurrInstruction.mIntP.get;
+        int destination = mCurrInstruction.getOperand!int;
         mIp = destination;
     }
 
@@ -268,7 +274,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0) {
-            int destinarion = mCurrInstruction.mIntP.get;
+            int destinarion = mCurrInstruction.getOperand!int;
             mIp = destinarion;
         }
     }
@@ -277,7 +283,7 @@ class Machine
         int operand = pop!int;
 
         if (operand > 0) {
-            int destinarion = mCurrInstruction.mIntP.get;
+            int destinarion = mCurrInstruction.getOperand!int;
             mIp = destinarion;
         }
     }
@@ -286,7 +292,7 @@ class Machine
         int operand = pop!int;
 
         if (operand < 0) {
-            int destinarion = mCurrInstruction.mIntP.get;
+            int destinarion = mCurrInstruction.getOperand!int;
             mIp = destinarion;
         }
     }
@@ -295,7 +301,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand > 0) {
-            int destinarion = mCurrInstruction.mIntP.get;
+            int destinarion = mCurrInstruction.getOperand!int;
             mIp = destinarion;
         }
     }
@@ -304,7 +310,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand < 0) {
-            int destinarion = mCurrInstruction.mIntP.get;
+            int destinarion = mCurrInstruction.getOperand!int;
             mIp = destinarion;
         }
     }
@@ -368,8 +374,32 @@ class Machine
         push!long(value);
     }
 
+    // loadg
+    void loadGlobal() {
+        string var = constantsGetAt!string(mCurrInstruction.getOperand!int);
+
+        Variant * value = (var in mGlobals);
+        if (value !is null) {
+            push!Variant(*value);
+        } else {
+            throw new VmError("Tried to access undefined variable");
+        }
+
+    }
+
+    // storeg
+    void storeGlobal() {
+        int value = pop!int;
+        string var = constantsGetAt!string(mCurrInstruction.getOperand!int);
+        mGlobals[var] = Variant(value);
+    }
+
     // halt
     void halt() {
         mHalt = true;
+    }
+
+    void debugPrint() {
+        writeln("Stack => " ~ to!string(mStack) ~ ", currInst: " ~ mCurrInstruction.toString());
     }
 }

@@ -1,9 +1,12 @@
 module vm.instruction;
 
 import std.typecons;
+import std.variant;
 import std.algorithm;
 import std.conv;
 import std.array;
+
+import vm.error;
 
 enum Opcode : ubyte
 {
@@ -16,6 +19,8 @@ enum Opcode : ubyte
     DIVI, DIVF, DIVL,
     DECI, DECF, DECL,
 
+    LOADG, STOREG,
+
     CMPI, CMPF, CMPL,
 
     JMP, JE, JG, JL, JGE, JLE,
@@ -24,44 +29,43 @@ enum Opcode : ubyte
 
 class Instruction
 {
-    //TODO: constrain instruction to 4 bytes
     Opcode mOpcode;
-    Nullable!byte mByteP;
-    Nullable!short mShortP;
-    Nullable!int mIntP;
+    Nullable!Variant mOperand;
  
     this (Opcode opcode) {
         mOpcode = opcode;
     }
 
-    this (Opcode opcode, byte operand) {
-        mOpcode = opcode;
-        mByteP = operand;
-    }
-    
-    this (Opcode opcode, short operand) {
-        mOpcode = opcode;
-        mShortP = operand;
-    }
-
     this (Opcode opcode, int operand) {
         mOpcode = opcode;
-        mIntP = operand;
+        mOperand = Variant(operand);
+    }
+
+    this (Opcode opcode, string operand) {
+        mOpcode = opcode;
+        mOperand = Variant(operand);
+    }
+
+    this (Opcode opcode, double operand) {
+        mOpcode = opcode;
+        mOperand = Variant(operand);
     }
 
     Opcode getOpcode() {
         return mOpcode;
     }
 
+    T getOperand(T)() {
+        if (mOperand.isNull) throw new VmError("The instruction '" ~ mOpcode ~ "' doesn't have an operand");
+        if (mOperand.get.peek!T) return mOperand.get.get!T;
+
+        throw new VmError("Operand type '" ~ to!string(mOperand.get.type)
+            ~ "' doesn't match asked type '" ~ to!string(typeid(T)) ~ "'");
+    }
+
     override string toString() {
-        if (!mByteP.isNull) {
-            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", byte: " ~ to!string(mByteP.get) ~ ")";    
-        } else if (!mShortP.isNull) {
-            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", short: " ~ to!string(mShortP.get) ~ ")";
-        } else if (!mIntP.isNull) {
-            return "Instruction(opcode: " ~ to!string(mOpcode) ~ ", int: " ~ to!string(mIntP.get) ~ ")";
-        }
+        if (!mOperand.isNull) return "(opcode: " ~ to!string(mOpcode) ~ ", operand: " ~ to!string(mOperand.get) ~ ")";
         
-        return "Instruction(opcode: " ~ to!string(mOpcode) ~ ")";
+        return "(opcode: " ~ to!string(mOpcode) ~ ")";
     }
 }
