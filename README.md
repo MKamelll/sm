@@ -1,2 +1,2 @@
-# Sm
+# sm
 A virtual machine
