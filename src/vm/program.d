@@ -360,7 +360,8 @@ class Generator
     // load, store from globals
     Instruction generateLoadGlobal() {
         if (match(TokenType.LOADG)) {
-            if (!match(TokenType.STRING)) throw expected(TokenType.STRING, "You need to provide a variable to load");
+            if (!match(TokenType.IDENTIFIER))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable to load");
 
             string operand = previous().getLexeme!string;
             return new Instruction(Opcode.LOADG, operand);
@@ -371,7 +372,8 @@ class Generator
 
     Instruction generateStoreGlobal() {
         if (match(TokenType.STOREG)) {
-            if (!match(TokenType.STRING)) throw expected(TokenType.STRING, "You need to provide a variable to store");
+            if (!match(TokenType.IDENTIFIER))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable to store");
             
             string operand = previous().getLexeme!string;
             return new Instruction(Opcode.STOREG, operand);
