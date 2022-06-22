@@ -24,7 +24,7 @@ enum Opcode : ubyte
     CMPI, CMPF, CMPL,
 
     JMP, JE, JG, JL, JGE, JLE,
-    HALT
+    HALT, LABEL
 }
 
 class Instruction
@@ -76,6 +76,11 @@ class Instruction
 
         throw new VmError("Operand type '" ~ to!string(mOperand.get.type)
             ~ "' doesn't match asked type '" ~ to!string(typeid(T)) ~ "'");
+    }
+
+    bool peekOperand(T)() {
+        if (mOperand.get.peek!T) return true;
+        return false;
     }
 
     override string toString() {

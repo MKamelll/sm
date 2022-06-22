@@ -11,13 +11,17 @@ import vm.instruction;
 import vm.error;
 import vm.program;
 
+alias Stack = Variant[];
+
 class Machine
 {
     Instruction[] mInstructions;
     const MAX_CAPACITY = 100;
-    Variant[] mStack;
+    Stack mStack;
+    Stack mCallStack;
     Instruction mCurrInstruction;
     Variant[string] mGlobals;
+    int[string] mLabels;
     int mIp;
     int mSp;
     bool mHalt;
@@ -25,6 +29,7 @@ class Machine
     this (Program program) {
         mInstructions = program.getInstructions();
         mStack = [];
+        mCallStack = [];
         mIp = 0;
         mSp = -1;
         mHalt = false;
@@ -36,6 +41,18 @@ class Machine
         }
 
         return true;
+    }
+
+    Variant pop() {
+        if (mSp < 0) {
+            throw new VmError("Not enough operands on the stack for instruction '"
+                ~ to!string(mCurrInstruction.getOpcode()) ~ "'");
+        }
+
+        Variant elm = mStack[mSp--];
+        mStack.popBack();
+
+        return elm;
     }
 
     T pop(T)() {
@@ -51,6 +68,12 @@ class Machine
         
         throw new VmError("For opcode '" ~ to!string(mCurrInstruction.mOpcode)
             ~ "' expected type '" ~ to!string(typeid(T)) ~ "' instead got '" ~ to!string(elm.type) ~ "'");
+    }
+
+    void push(Variant value) {
+        mSp++;
+        if (mSp > MAX_CAPACITY) throw new VmError("Stack overflow");
+        mStack ~= value;
     }
 
     void push(T)(string value) {
@@ -80,6 +103,7 @@ class Machine
         return mCurrInstruction;
     }
 
+    // random stack access
     T stackGetAt(T) (int index) {
         Variant elm = mStack[index];
 
@@ -97,6 +121,57 @@ class Machine
         }
     }
 
+    // query globals
+    bool globalsContains(string query) {
+        Variant * value = (query in mGlobals);
+        if (value !is null) return true;
+        return false;
+    }
+
+    void globalsAppend(T)(string key, T value) {
+        mGlobals[key] = Variant(value);
+    }
+
+    void globalsAppend(string key, Variant value) {
+        mGlobals[key] = value;
+    }
+
+    T globalsGet(T)(string key) {
+        if (globalsContains(key)) {
+            if (mGlobals[key].peek!T) return mGlobals[key].get!T;
+
+            throw new VmError("Expected global variable of type '" ~ to!string(typeid(T))
+                ~ "' instead available type '" ~ to!string(mGlobals[key].type) ~ "'");
+        }
+
+        throw new VmError("Undefined global variable '" ~ key ~ "'");
+    }
+
+    Variant globalsGet(string key) {
+        if (globalsContains(key)) return mGlobals[key];
+
+        throw new VmError("Undefined global variable '" ~ key ~ "'");
+    }
+
+    // query labels
+    bool labelsContains(string query) {
+        int * value = (query in mLabels);
+        if (value !is null) return true;
+        return false;
+    }
+
+    void labelsAppend(string key, int value) {
+        mLabels[key] = value;
+    }
+
+    int labelsGet(string key) {
+        if (labelsContains(key)) return mLabels[key];
+
+        throw new VmError("Undefined global variable '" ~ key ~ "'");
+    }
+
+    /* ___________________________________________________________________________________________________________ */
+    
     Variant[] run() {
 
         while (!isAtEnd()) {
@@ -148,6 +223,9 @@ class Machine
                 // loadg, storeg
                 case Opcode.LOADG: loadGlobal(); break;
                 case Opcode.STOREG: storeGlobal(); break;
+
+                // label
+                case Opcode.LABEL: label(); break;
                 
                 // halt
                 case Opcode.HALT: halt(); break;
@@ -253,9 +331,15 @@ class Machine
 
     // jmp
     void jump() {
-        
-        int destination = mCurrInstruction.getOperand!int;
-        mIp = destination;
+        if (mCurrInstruction.peekOperand!string) {
+            string labelName = mCurrInstruction.getOperand!string;
+            Variant * value = (labelName in mGlobals);
+            if (value is null) throw new VmError("Undefined label '" ~ labelName ~ "'");
+            mIp = mGlobals[labelName].get!int;
+        } else {
+            int destination = mCurrInstruction.getOperand!int;
+            mIp = destination;
+        }
     }
 
     void jumpIfEqual() {
@@ -365,21 +449,23 @@ class Machine
     // loadg
     void loadGlobal() {
         string var = mCurrInstruction.getOperand!string;
-
-        Variant * value = (var in mGlobals);
-        if (value !is null) {
-            push!Variant(*value);
-        } else {
-            throw new VmError("Tried to access undefined variable");
-        }
-
+        push(globalsGet(var));
     }
 
     // storeg
     void storeGlobal() {
-        int value = pop!int;
+        Variant value = pop();
         string var = mCurrInstruction.getOperand!string;
-        mGlobals[var] = Variant(value);
+        globalsAppend(var, value);
+    }
+
+    // label
+    void label() {
+        string labelName = mCurrInstruction.getOperand!string;
+        
+        if (labelsContains(labelName)) throw new VmError("There's a label already defined with the same name");
+
+        labelsAppend(labelName, mIp);
     }
 
     // halt

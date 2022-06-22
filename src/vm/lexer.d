@@ -21,7 +21,7 @@ enum TokenType : string
     PUSHB = "pushb",
     
     JMP = "jmp", JE = "je", JG = "jg", JL = "jl", JGE = "jge", JLE = "jle",
-    LOADG = "loadg", STOREG = "storeg",
+    LOADG = "loadg", STOREG = "storeg", CALL = "call", RETURN = "ret",
 
     INT = "int", FLOAT = "float", LONG = "long", BOOL = "bool", STRING = "string",
     
@@ -76,13 +76,17 @@ class Token
     T getLexeme(T)(bool allowConversion = false) {
         if (mLexeme.peek!T) return mLexeme.get!T;
 
-        if (allowConversion && mLexeme.convertsTo!T) {
-            return mLexeme.get!T;
+        if (allowConversion) {
+            if (mLexeme.convertsTo!T) return mLexeme.get!T;
         }
 
-        writeln(mLexeme);
         throw new VmError("Tried getting a lexeme of type '" ~ to!string(typeid(T))
             ~ "'" ~ " but available type is " ~ mLexeme.type.toString());
+    }
+
+    
+    Variant getLexeme() {
+        return mLexeme;
     }
 
     override string toString() {
@@ -195,7 +199,10 @@ class Lexer
 
                         case "loadg": return new Token(TokenType.LOADG, ident);
                         case "storeg": return new Token(TokenType.STOREG, ident);
-
+                        
+                        case "call": return new Token(TokenType.CALL, ident);
+                        case "ret": return new Token(TokenType.RETURN, ident);
+                        
                         case "halt": return new Token(TokenType.HALT, ident);
                         
                         default: {

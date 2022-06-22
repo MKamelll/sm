@@ -68,17 +68,27 @@ class Generator
         return false;
     }
 
+    bool check(TokenType type) {
+        if (mCurrToken.getType() == type) return true;
+        return false;
+    }
+
     VmError expected(TokenType type, string hint = "") {
         if (hint.length > 0) {
             return new VmError("Expected '" ~ type
                 ~ "' instead got '" ~ mCurrToken.getType() ~ "'" ~ "\n=> Hint: " ~ hint);    
         }
-        return new VmError("For '" ~ previous().getType() ~ "' expected '"
+        return new VmError("After '" ~ previous().getType() ~ "' expected '"
             ~ type ~ "' instead got '" ~ mCurrToken.getType() ~ "'");
     }
 
     Token previous() {
         return mPrevToken;
+    }
+
+    bool checkPrevious(TokenType type) {
+        if (previous().getType() == type) return true;
+        return false;
     }
 
     Token curr() {
@@ -87,7 +97,10 @@ class Generator
 
     Program generate() {
         mInstructions ~= generatePushInt();
-        if (!match(TokenType.SEMICOLON)) throw expected(TokenType.SEMICOLON);
+        
+        if (!match(TokenType.SEMICOLON) && previous().getType() != TokenType.COLON)
+            throw expected(TokenType.SEMICOLON);
+        
         if (isAtEnd()) return new Program(mInstructions);
         return generate();
     }
@@ -239,7 +252,14 @@ class Generator
     // jmp
     Instruction generateJmp() {
         if (match(TokenType.JMP)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            if (!match(TokenType.INT)) {
+                if (match(TokenType.IDENTIFIER)) {
+                    string operand = previous().getLexeme!string;
+                    return new Instruction(Opcode.JMP, operand);
+                } else {
+                    throw expected(TokenType.INT, "You have to provide a destination (int or label name) to jump to");
+                }
+            }
             
             int operand = previous().getLexeme!int;
             return new Instruction(Opcode.JMP, operand);
@@ -379,6 +399,21 @@ class Generator
             return new Instruction(Opcode.STOREG, operand);
         }
 
+        return generateLabel();
+    }
+
+    // block
+    Instruction generateLabel() {
+        if (match(TokenType.IDENTIFIER)) {
+            string operand = previous().getLexeme!string;
+            
+            if (match(TokenType.COLON)) {
+                return new Instruction(Opcode.LABEL, operand);
+            }
+
+            throw new VmError("Unknown opcode '" ~ to!string(previous().getLexeme()) ~ "'");
+        }
+
         return generateHalt();
     }
 
@@ -388,6 +423,6 @@ class Generator
             return new Instruction(Opcode.HALT);
         }
        
-       throw new VmError("Unknown opcode '" ~ curr().getLexeme!string(true) ~ "'");
+       throw new VmError("Unknown opcode '" ~ to!string(curr().getLexeme()) ~ "'");
     }
 }
