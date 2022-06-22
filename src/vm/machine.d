@@ -330,24 +330,27 @@ class Machine
     }
 
     // jmp
-    void jump() {
+
+    int getADestination() {
+        int destination;
         if (mCurrInstruction.peekOperand!string) {
             string labelName = mCurrInstruction.getOperand!string;
-            Variant * value = (labelName in mGlobals);
-            if (value is null) throw new VmError("Undefined label '" ~ labelName ~ "'");
-            mIp = mGlobals[labelName].get!int;
+            destination = labelsGet(labelName);
         } else {
-            int destination = mCurrInstruction.getOperand!int;
-            mIp = destination;
+            destination = mCurrInstruction.getOperand!int;
         }
+        return destination;
+    }
+    
+    void jump() {
+        mIp = getADestination();
     }
 
     void jumpIfEqual() {
         int operand = pop!int;
 
         if (operand == 0) {
-            int destinarion = mCurrInstruction.getOperand!int;
-            mIp = destinarion;
+            mIp = getADestination();
         }
     }
 
@@ -355,8 +358,7 @@ class Machine
         int operand = pop!int;
 
         if (operand > 0) {
-            int destinarion = mCurrInstruction.getOperand!int;
-            mIp = destinarion;
+            mIp = getADestination();
         }
     }
 
@@ -364,8 +366,7 @@ class Machine
         int operand = pop!int;
 
         if (operand < 0) {
-            int destinarion = mCurrInstruction.getOperand!int;
-            mIp = destinarion;
+            mIp = getADestination();
         }
     }
 
@@ -373,8 +374,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand > 0) {
-            int destinarion = mCurrInstruction.getOperand!int;
-            mIp = destinarion;
+            mIp = getADestination();
         }
     }
 
@@ -382,8 +382,7 @@ class Machine
         int operand = pop!int;
 
         if (operand == 0 || operand < 0) {
-            int destinarion = mCurrInstruction.getOperand!int;
-            mIp = destinarion;
+            mIp = getADestination();
         }
     }
 

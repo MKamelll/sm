@@ -270,7 +270,14 @@ class Generator
 
     Instruction generateJe() {
         if (match(TokenType.JE)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            if (!match(TokenType.INT)) {
+                if (match(TokenType.IDENTIFIER)) {
+                    string operand = previous().getLexeme!string;
+                    return new Instruction(Opcode.JE, operand);
+                } else {
+                    throw expected(TokenType.INT, "You have to provide a destination (int or label name) to jump to");
+                }
+            }
             
             int operand = previous().getLexeme!int;
             return new Instruction(Opcode.JE, operand);
@@ -282,7 +289,14 @@ class Generator
     
     Instruction generateJg() {
         if (match(TokenType.JG)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            if (!match(TokenType.INT)) {
+                if (match(TokenType.IDENTIFIER)) {
+                    string operand = previous().getLexeme!string;
+                    return new Instruction(Opcode.JG, operand);
+                } else {
+                    throw expected(TokenType.INT, "You have to provide a destination (int or label name) to jump to");
+                }
+            }
             
             int operand = previous().getLexeme!int;
             return new Instruction(Opcode.JG, operand);
@@ -294,7 +308,14 @@ class Generator
     
     Instruction generateJl() {
         if (match(TokenType.JL)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            if (!match(TokenType.INT)) {
+                if (match(TokenType.IDENTIFIER)) {
+                    string operand = previous().getLexeme!string;
+                    return new Instruction(Opcode.JL, operand);
+                } else {
+                    throw expected(TokenType.INT, "You have to provide a destination (int or label name) to jump to");
+                }
+            }
             
             int operand = previous().getLexeme!int;
             return new Instruction(Opcode.JL, operand);
@@ -306,7 +327,14 @@ class Generator
     
     Instruction generateJge() {
         if (match(TokenType.JGE)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            if (!match(TokenType.INT)) {
+                if (match(TokenType.IDENTIFIER)) {
+                    string operand = previous().getLexeme!string;
+                    return new Instruction(Opcode.JGE, operand);
+                } else {
+                    throw expected(TokenType.INT, "You have to provide a destination (int or label name) to jump to");
+                }
+            }
             
             int operand = previous().getLexeme!int;
             return new Instruction(Opcode.JGE, operand);
@@ -318,7 +346,14 @@ class Generator
     
     Instruction generateJle() {
         if (match(TokenType.JLE)) {
-            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide a destination to jump to");
+            if (!match(TokenType.INT)) {
+                if (match(TokenType.IDENTIFIER)) {
+                    string operand = previous().getLexeme!string;
+                    return new Instruction(Opcode.JLE, operand);
+                } else {
+                    throw expected(TokenType.INT, "You have to provide a destination (int or label name) to jump to");
+                }
+            }
             
             int operand = previous().getLexeme!int;
             return new Instruction(Opcode.JLE, operand);
