@@ -7,6 +7,7 @@ import std.conv;
 import std.array;
 
 import vm.error;
+import vm.common;
 
 enum Opcode : ubyte
 {
@@ -24,7 +25,7 @@ enum Opcode : ubyte
     CMPI, CMPF, CMPL,
 
     JMP, JE, JG, JL, JGE, JLE,
-    HALT, LABEL
+    HALT, LABEL, CALL, RET
 }
 
 class Instruction
@@ -34,6 +35,16 @@ class Instruction
  
     this (Opcode opcode) {
         mOpcode = opcode;
+    }
+
+    this (Opcode opcode, Variant operand) {
+        mOpcode = opcode;
+        mOperand = operand;
+    }
+
+    this (Opcode opcode, CallPair operand) {
+        mOpcode = opcode;
+        mOperand = Variant(operand);
     }
 
     this (Opcode opcode, int operand) {

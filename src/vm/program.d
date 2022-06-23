@@ -11,6 +11,7 @@ import std.variant;
 import vm.instruction;
 import vm.error;
 import vm.lexer;
+import vm.common;
 
 class Program
 {
@@ -447,6 +448,37 @@ class Generator
             }
 
             throw new VmError("Unknown opcode '" ~ to!string(previous().getLexeme()) ~ "'");
+        }
+
+        return generateCall();
+    }
+
+    // call
+    Instruction generateCall() {
+        if (match(TokenType.CALL)) {
+             if (!match(TokenType.INT)) {
+                
+                if (match(TokenType.IDENTIFIER)) {
+                    string destination = previous().getLexeme!string;
+                    
+                    if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide the number of arguments");
+                    
+                    int numOfArgs = previous().getLexeme!int;
+                    
+                    return new Instruction(Opcode.CALL, new CallPair(destination, numOfArgs));
+                
+                } else {
+                    throw expected(TokenType.IDENTIFIER, "You have to provide a destination (int or label name) to jump to");
+                }
+            }
+            
+            int destination = previous().getLexeme!int;
+
+            if (!match(TokenType.INT)) throw expected(TokenType.INT, "You have to provide the number of arguments");
+                    
+            int numOfArgs = previous().getLexeme!int;
+                    
+            return new Instruction(Opcode.CALL, new CallPair(destination, numOfArgs));
         }
 
         return generateHalt();
