@@ -10,28 +10,78 @@ import std.array;
 import vm.instruction;
 import vm.error;
 import vm.program;
+import vm.common;
 
 alias Stack = Variant[];
+
+class Identifier
+{
+    string mName;
+    Variant mValue;
+    int mDepth;
+
+    this (string name, Variant value, int depth) {
+        mName = name;
+        mValue = value;
+        mDepth = depth;
+    }
+    
+    this (string name, string value, int depth) {
+        mName = name;
+        mValue = Variant(value);
+        mDepth = depth;
+    }
+
+    this (string name, int value, int depth) {
+        mName = name;
+        mValue = Variant(value);
+        mDepth = depth;
+    }
+
+    this (string name, float value, int depth) {
+        mName = name;
+        mValue = Variant(value);
+        mDepth = depth;
+    }
+
+    
+    this (string name, double value, int depth) {
+        mName = name;
+        mValue = Variant(value);
+        mDepth = depth;
+    }
+
+    
+    this (string name, long value, int depth) {
+        mName = name;
+        mValue = Variant(value);
+        mDepth = depth;
+    }
+
+    override string toString() {
+        return "(" ~ mName ~ ", " ~ to!string(mValue) ~ ", " ~ to!string(mDepth) ~ ")";
+    }
+}
 
 class Machine
 {
     Instruction[] mInstructions;
     const MAX_CAPACITY = 100;
     Stack mStack;
-    Stack mCallStack;
     Instruction mCurrInstruction;
     Variant[string] mGlobals;
     int[string] mLabels;
     int mIp;
+    int mFp;
     int mSp;
     bool mHalt;
 
     this (Program program) {
         mInstructions = program.getInstructions();
         mStack = [];
-        mCallStack = [];
         mIp = 0;
         mSp = -1;
+        mFp = 0;
         mHalt = false;
     }
 
@@ -170,9 +220,21 @@ class Machine
         throw new VmError("Undefined global variable '" ~ key ~ "'");
     }
 
+    int getEntryPoint() {
+        for (int i = 0;  i < mInstructions.length; i++) {
+            Instruction instruction = mInstructions[i];
+            if (instruction.getOpcode() == Opcode.LABEL
+                && instruction.peekOperand!string && instruction.getOperand!string == "main" ) return i;
+        }
+
+        throw new VmError("Expected a 'main' entry label");
+    }
+
     /* ___________________________________________________________________________________________________________ */
     
     Variant[] run() {
+        
+        mIp = getEntryPoint();
 
         while (!isAtEnd()) {
             Instruction curr = advance();
@@ -226,6 +288,10 @@ class Machine
 
                 // label
                 case Opcode.LABEL: label(); break;
+
+                // call, return
+                case Opcode.CALL: call(); break;
+                case Opcode.RET: ret(); break;
                 
                 // halt
                 case Opcode.HALT: halt(); break;
@@ -462,9 +528,62 @@ class Machine
     void label() {
         string labelName = mCurrInstruction.getOperand!string;
         
-        if (labelsContains(labelName)) throw new VmError("There's a label already defined with the same name");
+        if (!labelsContains(labelName)) {
+            labelsAppend(labelName, mIp);
+        }
 
-        labelsAppend(labelName, mIp);
+    }
+
+    // call
+    void call() {
+
+        CallPair callParameters = mCurrInstruction.getOperand!CallPair;
+        
+        int destination;
+        if (callParameters.peekDestination!string) {
+            string label = callParameters.getDestination!string;
+            destination = labelsGet(label);
+        } else if (callParameters.peekDestination!int) {
+            destination = callParameters.getDestination!int;
+        }
+
+        int argsNum = callParameters.numOfArgs();
+
+        // save number of args
+        push!int(argsNum);
+
+        // save current frame pointer
+        push!int(mFp);
+
+        // save the return address
+        push!int(mIp);
+
+        // set the frame pointer to the current stack pointer
+        mFp = mSp;
+        
+        // set the instruction pointer to inside function
+        mIp = destination;
+    }
+
+    void ret() {
+        Variant returnValue = pop();
+
+        // set the stack pointer to the previous frame pointer
+        mSp = mFp;
+
+        // pop the return address
+        int destination = pop!int;
+
+        int prevFp = pop!int;
+        mFp = prevFp;
+
+        int numOfArgs = pop!int;
+
+        for (int i = 0; i < numOfArgs; i++) pop();
+
+        push(returnValue);
+
+        mIp = destination;
     }
 
     // halt

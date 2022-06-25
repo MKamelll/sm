@@ -481,6 +481,15 @@ class Generator
             return new Instruction(Opcode.CALL, new CallPair(destination, numOfArgs));
         }
 
+        return generateRet();
+    }
+
+    // ret
+    Instruction generateRet() {
+        if (match(TokenType.RETURN)) {
+            return new Instruction(Opcode.RET);
+        }
+
         return generateHalt();
     }
 
