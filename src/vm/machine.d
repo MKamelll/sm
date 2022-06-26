@@ -169,11 +169,17 @@ class Machine
             if (label.getName() == query) return true;
         }
 
+        foreach (Instruction instruction; mInstructions)
+        {
+            // in case calling a label not yet defined
+            if (instruction.getOpcode() == Opcode.LABEL && instruction.getOperand!string == query) return true;
+        }
+
         return false;
     }
 
-    void labelsAppend(string name, int value) {
-        mLabels ~= new Label(name, value);
+    void labelsAppend(string name, int destination) {
+        mLabels ~= new Label(name, destination);
     }
 
     int labelsGet(string query) {
@@ -181,6 +187,12 @@ class Machine
             foreach_reverse (Label label; mLabels)
             {
                 if (label.getName() == query) return label.getDestination();
+            }
+
+            for (int i = 0; i < mInstructions.length; i++)
+            {
+                if (mInstructions[i].getOpcode() == Opcode.LABEL && mInstructions[i].getOperand!string == query)
+                    return i;
             }
         }
 
