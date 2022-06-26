@@ -12,69 +12,19 @@ import vm.error;
 import vm.program;
 import vm.common;
 
-alias Stack = Variant[];
-
-class Identifier
-{
-    string mName;
-    Variant mValue;
-    int mDepth;
-
-    this (string name, Variant value, int depth) {
-        mName = name;
-        mValue = value;
-        mDepth = depth;
-    }
-    
-    this (string name, string value, int depth) {
-        mName = name;
-        mValue = Variant(value);
-        mDepth = depth;
-    }
-
-    this (string name, int value, int depth) {
-        mName = name;
-        mValue = Variant(value);
-        mDepth = depth;
-    }
-
-    this (string name, float value, int depth) {
-        mName = name;
-        mValue = Variant(value);
-        mDepth = depth;
-    }
-
-    
-    this (string name, double value, int depth) {
-        mName = name;
-        mValue = Variant(value);
-        mDepth = depth;
-    }
-
-    
-    this (string name, long value, int depth) {
-        mName = name;
-        mValue = Variant(value);
-        mDepth = depth;
-    }
-
-    override string toString() {
-        return "(" ~ mName ~ ", " ~ to!string(mValue) ~ ", " ~ to!string(mDepth) ~ ")";
-    }
-}
-
 class Machine
 {
     Instruction[] mInstructions;
     const MAX_CAPACITY = 100;
     Stack mStack;
     Instruction mCurrInstruction;
-    Variant[string] mGlobals;
-    int[string] mLabels;
+    Variable[] mVariables;
+    Label[] mLabels;
     int mIp;
     int mFp;
     int mSp;
     bool mHalt;
+    bool mDebug;
 
     this (Program program) {
         mInstructions = program.getInstructions();
@@ -83,6 +33,7 @@ class Machine
         mSp = -1;
         mFp = 0;
         mHalt = false;
+        mDebug = true;
     }
 
     bool isAtEnd() {
@@ -171,53 +122,69 @@ class Machine
         }
     }
 
-    // query globals
-    bool globalsContains(string query) {
-        Variant * value = (query in mGlobals);
-        if (value !is null) return true;
+    // query variables
+    bool variablesContains(string query) {
+        foreach_reverse (Variable var; mVariables) {
+            if (var.getName() == query) return true;
+        }
         return false;
     }
 
-    void globalsAppend(T)(string key, T value) {
-        mGlobals[key] = Variant(value);
+    void variablesAppend(T)(string name, T value) {
+        mVariables ~= new Variable(name, value);
     }
 
-    void globalsAppend(string key, Variant value) {
-        mGlobals[key] = value;
+    void variablesAppend(string name, Variant value) {
+        mVariables ~= new Variable(name, value);
     }
 
-    T globalsGet(T)(string key) {
-        if (globalsContains(key)) {
-            if (mGlobals[key].peek!T) return mGlobals[key].get!T;
-
-            throw new VmError("Expected global variable of type '" ~ to!string(typeid(T))
-                ~ "' instead available type '" ~ to!string(mGlobals[key].type) ~ "'");
+    T variablesGet(T)(string query) {
+        if (variablesContains(query)) {
+            foreach_reverse (Variable var; mVariables)
+            {
+                if (var.getName() == query) {
+                    return var.getValue!T;
+                }
+            }
         }
 
-        throw new VmError("Undefined global variable '" ~ key ~ "'");
+        throw new VmError("Undefined variable '" ~ query ~ "'");
     }
 
-    Variant globalsGet(string key) {
-        if (globalsContains(key)) return mGlobals[key];
+    Variant variablesGet(string query) {
+        if (variablesContains(query)) {
+            foreach_reverse (Variable var; mVariables)
+            {
+                if (var.getName() == query) return var.getValue();
+            }
+        }
 
-        throw new VmError("Undefined global variable '" ~ key ~ "'");
+        throw new VmError("Undefined global variable '" ~ query ~ "'");
     }
 
     // query labels
     bool labelsContains(string query) {
-        int * value = (query in mLabels);
-        if (value !is null) return true;
+        foreach_reverse (Label label; mLabels)
+        {
+            if (label.getName() == query) return true;
+        }
+
         return false;
     }
 
-    void labelsAppend(string key, int value) {
-        mLabels[key] = value;
+    void labelsAppend(string name, int value) {
+        mLabels ~= new Label(name, value);
     }
 
-    int labelsGet(string key) {
-        if (labelsContains(key)) return mLabels[key];
+    int labelsGet(string query) {
+        if (labelsContains(query)) {
+            foreach_reverse (Label label; mLabels)
+            {
+                if (label.getName() == query) return label.getDestination();
+            }
+        }
 
-        throw new VmError("Undefined global variable '" ~ key ~ "'");
+        throw new VmError("Undefined global variable '" ~ query ~ "'");
     }
 
     int getEntryPoint() {
@@ -297,7 +264,8 @@ class Machine
                 case Opcode.HALT: halt(); break;
                 default: throw new VmError("Unkown Machine Instruction: '" ~ to!string(curr.getOpcode()) ~ "'");
             }
-            debugPrint();
+            
+            if (mDebug) debugPrint();
         }
         
         return mStack;
@@ -514,14 +482,14 @@ class Machine
     // loadg
     void loadGlobal() {
         string var = mCurrInstruction.getOperand!string;
-        push(globalsGet(var));
+        push(variablesGet(var));
     }
 
     // storeg
     void storeGlobal() {
         Variant value = pop();
         string var = mCurrInstruction.getOperand!string;
-        globalsAppend(var, value);
+        variablesAppend(var, value);
     }
 
     // label

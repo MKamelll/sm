@@ -6,6 +6,8 @@ import std.variant;
 
 import vm.error;
 
+alias Stack = Variant[];
+
 class CallPair
 {
     Variant mDestination;
@@ -50,5 +52,86 @@ class CallPair
 
     override string toString() {
         return "(" ~ to!string(mDestination) ~ ", " ~ to!string(mNumOfArgs) ~ ")";
+    }
+}
+
+class Variable
+{
+    string mName;
+    Variant mValue;
+    int mDepth;
+
+    this (string name, Variant value) {
+        mName = name;
+        mValue = value;
+    }
+    
+    this (string name, string value) {
+        mName = name;
+        mValue = Variant(value);
+    }
+
+    this (string name, int value) {
+        mName = name;
+        mValue = Variant(value);
+    }
+
+    this (string name, float value) {
+        mName = name;
+        mValue = Variant(value);
+    }
+
+    
+    this (string name, double value) {
+        mName = name;
+        mValue = Variant(value);
+    }
+
+    
+    this (string name, long value) {
+        mName = name;
+        mValue = Variant(value);
+    }
+
+    string getName() {
+        return mName;
+    }
+
+    Variant getValue() {
+        return mValue;
+    }
+
+    T getValue(T)() {
+        if (mValue.peek!T) return mValue.get!T;
+
+        throw new VmError("Variable '" ~ mName ~ "' is of type '"
+            ~ to!string(mValue.type) ~ "', asked for type '" ~ to!string(typeid(T)) ~ "'");
+    }
+
+    override string toString() {
+        return "(" ~ mName ~ ", " ~ to!string(mValue) ~ ", " ~ to!string(mDepth) ~ ")";
+    }
+}
+
+class Label
+{
+    string mName;
+    int mDestination;
+
+    this (string name, int destination) {
+        mName = name;
+        mDestination = destination;
+    }
+
+    string getName() {
+        return mName;
+    }
+
+    int getDestination() {
+        return mDestination;
+    }
+
+    override string toString() {
+        return "(" ~ mName ~ ", " ~ to!string(mDestination) ~")";
     }
 }
