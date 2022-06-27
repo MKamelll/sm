@@ -11,7 +11,6 @@ fac:
     call fac 1;
     muli;
     ret;
-
 main:
     pushi 10;
     call fac 1;
