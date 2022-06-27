@@ -583,13 +583,14 @@ class Machine
 
     // load, store relative to fp
     void load() {
+
+        if (mDepth < 1) {
+            throw new VmError("Tried accessing a local variable, but only global scope is available, use 'loadg'");
+        }
+
         int numOfArgs = stackGetAt!int(mFp - 2);
         int startOfFrame = mFp - 2 - numOfArgs;
         int endOfFrame = mSp;
-
-        if (startOfFrame < 0) {
-            throw new VmError("Tried accessing a local variable, but only global scope is available, use 'loadg'");
-        }
 
         if (mCurrInstruction.peekOperand!string) {
             string var = mCurrInstruction.getOperand!string;
@@ -605,7 +606,12 @@ class Machine
     }
 
     void store() {
-        Variant value = stackGetAt(mSp);
+        
+        if (mDepth < 1) {
+            throw new VmError("Tried storing a local variable, but only global scope is available, use 'storeg'");
+        }
+
+        Variant value = pop();
         string var = mCurrInstruction.getOperand!string;
         variablesAppend(var, value, mDepth);
     }
