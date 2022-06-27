@@ -490,6 +490,41 @@ class Generator
             return new Instruction(Opcode.RET);
         }
 
+        return generateLoad();
+    }
+
+    // load, store relative to fp
+    Instruction generateLoad() {
+        if (match(TokenType.LOAD)) {
+            if (!match(TokenType.IDENTIFIER, TokenType.INT))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable/address to load");
+            
+            if (previous().peekLexeme!string) {
+                string operand = previous().getLexeme!string;
+                return new Instruction(Opcode.LOAD, operand);
+            }
+
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.LOAD, operand);
+        }
+
+        return generateStore();
+    }
+
+    Instruction generateStore() {
+        if (match(TokenType.STORE)) {
+            if (!match(TokenType.IDENTIFIER, TokenType.INT))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable to store");
+            
+            if (previous().peekLexeme!string) {
+                string operand = previous().getLexeme!string;
+                return new Instruction(Opcode.STORE, operand);
+            }
+
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.STORE, operand);
+        }
+        
         return generateHalt();
     }
 

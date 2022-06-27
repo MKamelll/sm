@@ -61,36 +61,40 @@ class Variable
     Variant mValue;
     int mDepth;
 
-    this (string name, Variant value) {
+    this (string name, Variant value, int depth) {
         mName = name;
         mValue = value;
+        mDepth = depth;
     }
     
-    this (string name, string value) {
+    this (string name, string value, int depth) {
         mName = name;
         mValue = Variant(value);
+        mDepth = depth;
     }
 
-    this (string name, int value) {
+    this (string name, int value, int depth) {
         mName = name;
         mValue = Variant(value);
+        mDepth = depth;
     }
 
-    this (string name, float value) {
+    this (string name, float value, int depth) {
         mName = name;
         mValue = Variant(value);
+        mDepth = depth;
     }
-
     
-    this (string name, double value) {
+    this (string name, double value, int depth) {
         mName = name;
         mValue = Variant(value);
+        mDepth = depth;
     }
 
-    
-    this (string name, long value) {
+    this (string name, long value, int depth) {
         mName = name;
         mValue = Variant(value);
+        mDepth = depth;
     }
 
     string getName() {
@@ -106,6 +110,10 @@ class Variable
 
         throw new VmError("Variable '" ~ mName ~ "' is of type '"
             ~ to!string(mValue.type) ~ "', asked for type '" ~ to!string(typeid(T)) ~ "'");
+    }
+
+    int getDepth() {
+        return mDepth;
     }
 
     override string toString() {

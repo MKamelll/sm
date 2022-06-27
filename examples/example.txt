@@ -1,8 +1,0 @@
-i: pushi 10
-
-loop:
-    pushi 15
-    pushi 12
-    addi
-    deci i
-    je loop

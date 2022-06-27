@@ -23,6 +23,7 @@ class Machine
     int mIp;
     int mFp;
     int mSp;
+    int mDepth;
     bool mHalt;
     bool mDebug;
 
@@ -32,6 +33,7 @@ class Machine
         mIp = 0;
         mSp = -1;
         mFp = 0;
+        mDepth = 0;
         mHalt = false;
         mDebug = true;
     }
@@ -105,6 +107,11 @@ class Machine
     }
 
     // random stack access
+    Variant stackGetAt(int index) {
+        Variant elm = mStack[index];
+        return elm;
+    }
+    
     T stackGetAt(T) (int index) {
         Variant elm = mStack[index];
 
@@ -123,26 +130,26 @@ class Machine
     }
 
     // query variables
-    bool variablesContains(string query) {
+    bool variablesContains(string query, int depth) {
         foreach_reverse (Variable var; mVariables) {
-            if (var.getName() == query) return true;
+            if (var.getName() == query && var.getDepth() <= depth) return true;
         }
         return false;
     }
 
-    void variablesAppend(T)(string name, T value) {
-        mVariables ~= new Variable(name, value);
+    void variablesAppend(T)(string name, T value, int depth) {
+        mVariables ~= new Variable(name, value, depth);
     }
 
-    void variablesAppend(string name, Variant value) {
-        mVariables ~= new Variable(name, value);
+    void variablesAppend(string name, Variant value, int depth) {
+        mVariables ~= new Variable(name, value, depth);
     }
 
-    T variablesGet(T)(string query) {
-        if (variablesContains(query)) {
+    T variablesGet(T)(string query, int depth) {
+        if (variablesContains(query, depth)) {
             foreach_reverse (Variable var; mVariables)
             {
-                if (var.getName() == query) {
+                if (var.getName() == query && var.getDepth() <= depth) {
                     return var.getValue!T;
                 }
             }
@@ -151,11 +158,11 @@ class Machine
         throw new VmError("Undefined variable '" ~ query ~ "'");
     }
 
-    Variant variablesGet(string query) {
-        if (variablesContains(query)) {
+    Variant variablesGet(string query, int depth) {
+        if (variablesContains(query, depth)) {
             foreach_reverse (Variable var; mVariables)
             {
-                if (var.getName() == query) return var.getValue();
+                if (var.getName() == query && var.getDepth() <= depth) return var.getValue();
             }
         }
 
@@ -265,6 +272,10 @@ class Machine
                 case Opcode.LOADG: loadGlobal(); break;
                 case Opcode.STOREG: storeGlobal(); break;
 
+                // load, store locals
+                case Opcode.LOAD: load(); break;
+                case Opcode.STORE: store(); break;
+                
                 // label
                 case Opcode.LABEL: label(); break;
 
@@ -494,14 +505,14 @@ class Machine
     // loadg
     void loadGlobal() {
         string var = mCurrInstruction.getOperand!string;
-        push(variablesGet(var));
+        push(variablesGet(var, 0));
     }
 
     // storeg
     void storeGlobal() {
         Variant value = pop();
         string var = mCurrInstruction.getOperand!string;
-        variablesAppend(var, value);
+        variablesAppend(var, value, 0);
     }
 
     // label
@@ -516,6 +527,8 @@ class Machine
 
     // call
     void call() {
+
+        mDepth++;
 
         CallPair callParameters = mCurrInstruction.getOperand!CallPair;
         
@@ -545,6 +558,7 @@ class Machine
         mIp = destination;
     }
 
+    // FIXME: store/load local with label (add: load 0; load 1; addi; store sum; load sum; ret; main: pushi 15; pushi 12; call add 2; storeg i; loadg i;)
     void ret() {
         Variant returnValue = pop();
 
@@ -553,6 +567,7 @@ class Machine
 
         // pop the return address
         int destination = pop!int;
+        mIp = destination;
 
         int prevFp = pop!int;
         mFp = prevFp;
@@ -563,7 +578,36 @@ class Machine
 
         push(returnValue);
 
-        mIp = destination;
+        mDepth--;
+    }
+
+    // load, store relative to fp
+    void load() {
+        int numOfArgs = stackGetAt!int(mFp - 2);
+        int startOfFrame = mFp - 2 - numOfArgs;
+        int endOfFrame = mSp;
+
+        if (startOfFrame < 0) {
+            throw new VmError("Tried accessing a local variable, but only global scope is available, use 'loadg'");
+        }
+
+        if (mCurrInstruction.peekOperand!string) {
+            string var = mCurrInstruction.getOperand!string;
+            push(variablesGet(var, mDepth));
+        } else {
+            int varIndexOnFrame = mCurrInstruction.getOperand!int + startOfFrame;
+            if (varIndexOnFrame > endOfFrame) {
+                throw new VmError("Tried accessing a local variable index '"
+                    ~ to!string(varIndexOnFrame) ~ "' outside a frame that ends at '" ~ to!string(endOfFrame) ~ "'");
+            }
+            push(stackGetAt(varIndexOnFrame));
+        }
+    }
+
+    void store() {
+        Variant value = stackGetAt(mSp);
+        string var = mCurrInstruction.getOperand!string;
+        variablesAppend(var, value, mDepth);
     }
 
     // halt

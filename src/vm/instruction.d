@@ -20,7 +20,7 @@ enum Opcode : ubyte
     DIVI, DIVF, DIVL,
     DECI, DECF, DECL,
 
-    LOADG, STOREG,
+    LOADG, STOREG, LOAD, STORE,
 
     CMPI, CMPF, CMPL,
 
