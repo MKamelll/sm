@@ -1,4 +1,4 @@
-fib:
+fac:
     load 0; 
     pushi 1;
     cmpi;
@@ -8,10 +8,10 @@ fib:
     load 0;
     load 0;
     deci;
-    call fib 1;
+    call fac 1;
     muli;
     ret;
 
 main:
     pushi 10;
-    call fib 1;
+    call fac 1;
