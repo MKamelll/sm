@@ -410,31 +410,6 @@ class Generator
             return new Instruction(Opcode.DECL);            
         }
 
-        return generateLoadGlobal();
-    }
-
-    // load, store from globals
-    Instruction generateLoadGlobal() {
-        if (match(TokenType.LOADG)) {
-            if (!match(TokenType.IDENTIFIER))
-                throw expected(TokenType.IDENTIFIER, "You need to provide a variable to load");
-
-            string operand = previous().getLexeme!string;
-            return new Instruction(Opcode.LOADG, operand);
-        }
-
-        return generateStoreGlobal();
-    }
-
-    Instruction generateStoreGlobal() {
-        if (match(TokenType.STOREG)) {
-            if (!match(TokenType.IDENTIFIER))
-                throw expected(TokenType.IDENTIFIER, "You need to provide a variable to store");
-            
-            string operand = previous().getLexeme!string;
-            return new Instruction(Opcode.STOREG, operand);
-        }
-
         return generateLabel();
     }
 
@@ -490,39 +465,109 @@ class Generator
             return new Instruction(Opcode.RET);
         }
 
-        return generateLoad();
+        return generateLoadInt();
     }
 
-    // load, store relative to fp
-    Instruction generateLoad() {
-        if (match(TokenType.LOAD)) {
+    // load, store
+    Instruction generateLoadInt() {
+        if (match(TokenType.LOADI)) {
             if (!match(TokenType.IDENTIFIER, TokenType.INT))
                 throw expected(TokenType.IDENTIFIER, "You need to provide a variable/address to load");
             
             if (previous().peekLexeme!string) {
                 string operand = previous().getLexeme!string;
-                return new Instruction(Opcode.LOAD, operand);
+                return new Instruction(Opcode.LOADI, operand);
             }
 
             int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.LOAD, operand);
+            return new Instruction(Opcode.LOADI, operand);
         }
 
-        return generateStore();
+        return generateLoadFloat();
     }
 
-    Instruction generateStore() {
-        if (match(TokenType.STORE)) {
+    Instruction generateLoadFloat() {
+        if (match(TokenType.LOADF)) {
+            if (!match(TokenType.IDENTIFIER, TokenType.INT))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable/address to load");
+            
+            if (previous().peekLexeme!string) {
+                string operand = previous().getLexeme!string;
+                return new Instruction(Opcode.LOADF, operand);
+            }
+
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.LOADF, operand);
+        }
+
+        return generateLoadLong();
+    }
+
+    Instruction generateLoadLong() {
+        if (match(TokenType.LOADL)) {
+            if (!match(TokenType.IDENTIFIER, TokenType.INT))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable/address to load");
+            
+            if (previous().peekLexeme!string) {
+                string operand = previous().getLexeme!string;
+                return new Instruction(Opcode.LOADL, operand);
+            }
+
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.LOADL, operand);
+        }
+
+        return generateStoreInt();
+    }
+
+    Instruction generateStoreInt() {
+        if (match(TokenType.STOREI)) {
             if (!match(TokenType.IDENTIFIER, TokenType.INT))
                 throw expected(TokenType.IDENTIFIER, "You need to provide a variable to store");
             
             if (previous().peekLexeme!string) {
                 string operand = previous().getLexeme!string;
-                return new Instruction(Opcode.STORE, operand);
+                return new Instruction(Opcode.STOREI, operand);
             }
 
             int operand = previous().getLexeme!int;
-            return new Instruction(Opcode.STORE, operand);
+            return new Instruction(Opcode.STOREI, operand);
+        }
+        
+        return generateStoreFloat();
+    }
+
+
+    Instruction generateStoreFloat() {
+        if (match(TokenType.STOREF)) {
+            if (!match(TokenType.IDENTIFIER, TokenType.INT))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable to store");
+            
+            if (previous().peekLexeme!string) {
+                string operand = previous().getLexeme!string;
+                return new Instruction(Opcode.STOREF, operand);
+            }
+
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.STOREF, operand);
+        }
+        
+        return generateStoreLong();
+    }
+
+
+    Instruction generateStoreLong() {
+        if (match(TokenType.STOREL)) {
+            if (!match(TokenType.IDENTIFIER, TokenType.INT))
+                throw expected(TokenType.IDENTIFIER, "You need to provide a variable to store");
+            
+            if (previous().peekLexeme!string) {
+                string operand = previous().getLexeme!string;
+                return new Instruction(Opcode.STOREL, operand);
+            }
+
+            int operand = previous().getLexeme!int;
+            return new Instruction(Opcode.STOREL, operand);
         }
         
         return generateHalt();

@@ -18,9 +18,11 @@ enum Opcode : ubyte
     SUBI, SUBF, SUBL,
     MULI, MULF, MULL,
     DIVI, DIVF, DIVL,
+    
     DECI, DECF, DECL,
-
-    LOADG, STOREG, LOAD, STORE,
+    
+    LOADI, LOADF, LOADL,
+    STOREI, STOREF, STOREL,
 
     CMPI, CMPF, CMPL,
 

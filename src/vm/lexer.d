@@ -17,11 +17,14 @@ enum TokenType : string
     MULI = "muli", MULF = "mulf", MULL = "mull",
     CMPI = "cmpi", CMPF = "cmpf", CMPL = "cmpl",
     DECI = "deci", DECF = "decf", DECL = "decl",
-    
+    LOADI = "loadi", LOADF = "loadf", LOADL = "loadl",
+    STOREI = "storei", STOREF = "storef", STOREL = "storel",
+
     PUSHB = "pushb",
     
     JMP = "jmp", JE = "je", JG = "jg", JL = "jl", JGE = "jge", JLE = "jle",
-    LOADG = "loadg", STOREG = "storeg", CALL = "call", RETURN = "ret", LOAD = "load", STORE = "store", 
+    
+    CALL = "call", RETURN = "ret", 
 
     INT = "int", FLOAT = "float", LONG = "long", BOOL = "bool", STRING = "string",
     
@@ -163,31 +166,39 @@ class Lexer
                if (isAlpha(mCurrChar)) {
                     string ident = anIdentifier();
                     switch (ident) {
+
+                        // push
                         case "pushi": return new Token(TokenType.PUSHI, ident);
                         case "pushf": return new Token(TokenType.PUSHF, ident);
                         case "pushl": return new Token(TokenType.PUSHL, ident);
                         case "pushb": return new Token(TokenType.PUSHB, ident);
                         
+                        // add
                         case "addi": return new Token(TokenType.ADDI, ident);
                         case "addf": return new Token(TokenType.ADDF, ident);
                         case "addl": return new Token(TokenType.ADDL, ident);
                         
+                        // sub
                         case "subi": return new Token(TokenType.SUBI, ident);
                         case "subf": return new Token(TokenType.SUBF, ident);
                         case "subl": return new Token(TokenType.SUBL, ident);
 
+                        // mul
                         case "muli": return new Token(TokenType.MULI, ident);
                         case "mulf": return new Token(TokenType.MULF, ident);
                         case "mull": return new Token(TokenType.MULL, ident);
 
+                        // dev
                         case "devi": return new Token(TokenType.DEVI, ident);
                         case "devf": return new Token(TokenType.DEVF, ident);
                         case "devl": return new Token(TokenType.DEVL, ident);
 
+                        // cmp
                         case "cmpi": return new Token(TokenType.CMPI, ident);
                         case "cmpf": return new Token(TokenType.CMPF, ident);
                         case "cmpl": return new Token(TokenType.CMPL, ident);
 
+                        // jmp
                         case "jmp": return new Token(TokenType.JMP, ident);
                         case "je":  return new Token(TokenType.JE, ident);
                         case "jg":  return new Token(TokenType.JG, ident);
@@ -195,21 +206,30 @@ class Lexer
                         case "jge": return new Token(TokenType.JGE, ident);
                         case "jle": return new Token(TokenType.JLE, ident);
 
+                        // dec
                         case "deci": return new Token(TokenType.DECI, ident);
                         case "decf": return new Token(TokenType.DECF, ident);
                         case "decl": return new Token(TokenType.DECL, ident);
+                        
+                        // bool
                         case "true": return new Token(TokenType.BOOL, true);
                         case "false": return new Token(TokenType.BOOL, false);
-
-                        case "loadg": return new Token(TokenType.LOADG, ident);
-                        case "storeg": return new Token(TokenType.STOREG, ident);
                         
-                        case "load": return new Token(TokenType.LOAD, ident);
-                        case "store": return new Token(TokenType.STORE, ident);
+                        // load
+                        case "loadi": return new Token(TokenType.LOADI, ident);
+                        case "loadf": return new Token(TokenType.LOADF, ident);
+                        case "loadl": return new Token(TokenType.LOADL, ident);
+                        
+                        // store
+                        case "storei": return new Token(TokenType.STOREI, ident);
+                        case "storef": return new Token(TokenType.STOREF, ident);
+                        case "storel": return new Token(TokenType.STOREL, ident);
 
+                        // call, ret
                         case "call": return new Token(TokenType.CALL, ident);
                         case "ret": return new Token(TokenType.RETURN, ident);
-                        
+
+                        // halt                        
                         case "halt": return new Token(TokenType.HALT, ident);
                         
                         default: {

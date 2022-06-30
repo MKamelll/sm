@@ -268,13 +268,15 @@ class Machine
                 case Opcode.DECF: decrementFloat(); break;
                 case Opcode.DECL: decrementLong(); break;
 
-                // loadg, storeg
-                case Opcode.LOADG: loadGlobal(); break;
-                case Opcode.STOREG: storeGlobal(); break;
-
-                // load, store locals
-                case Opcode.LOAD: load(); break;
-                case Opcode.STORE: store(); break;
+                // load
+                case Opcode.LOADI: loadInt(); break;
+                case Opcode.LOADF: loadFloat(); break;
+                case Opcode.LOADL: loadLong(); break;
+                
+                // store
+                case Opcode.STOREI: storeInt(); break;
+                case Opcode.STOREF: storeFloat(); break;
+                case Opcode.STOREL: storeLong(); break;
                 
                 // label
                 case Opcode.LABEL: label(); break;
@@ -502,19 +504,6 @@ class Machine
         push!long(value);
     }
 
-    // loadg
-    void loadGlobal() {
-        string var = mCurrInstruction.getOperand!string;
-        push(variablesGet(var, 0));
-    }
-
-    // storeg
-    void storeGlobal() {
-        Variant value = pop();
-        string var = mCurrInstruction.getOperand!string;
-        variablesAppend(var, value, 0);
-    }
-
     // label
     void label() {
         string labelName = mCurrInstruction.getOperand!string;
@@ -558,7 +547,7 @@ class Machine
         mIp = destination;
     }
 
-    // FIXME: store/load local with label (add: load 0; load 1; addi; store sum; load sum; ret; main: pushi 15; pushi 12; call add 2; storeg i; loadg i;)
+    // ret
     void ret() {
         Variant returnValue = pop();
 
@@ -590,39 +579,112 @@ class Machine
         mDepth--;
     }
 
-    // load, store relative to fp
-    void load() {
+    // load
+    void loadInt() {
 
-        if (mDepth < 1) {
-            throw new VmError("Tried accessing a local variable, but only global scope is available, use 'loadg'");
+        int numOfArgs;
+        int startOfFrame;
+        int endOfFrame;
+
+        if (mDepth == 0) {
+            numOfArgs = 0;
+            startOfFrame = 0;
+            endOfFrame = mSp;
+        } else {
+            numOfArgs = stackGetAt!int(mFp - 2);
+            startOfFrame = mFp - 2 - numOfArgs;
+            endOfFrame = mSp;
         }
-
-        int numOfArgs = stackGetAt!int(mFp - 2);
-        int startOfFrame = mFp - 2 - numOfArgs;
-        int endOfFrame = mSp;
 
         if (mCurrInstruction.peekOperand!string) {
             string var = mCurrInstruction.getOperand!string;
-            push(variablesGet(var, mDepth));
+            push!int(variablesGet!int(var, mDepth));
         } else {
             int varIndexOnFrame = mCurrInstruction.getOperand!int + startOfFrame;
             if (varIndexOnFrame > endOfFrame) {
                 throw new VmError("Tried accessing a local variable index '"
                     ~ to!string(varIndexOnFrame) ~ "' outside a frame that ends at '" ~ to!string(endOfFrame) ~ "'");
             }
-            push(stackGetAt(varIndexOnFrame));
+            push!int(stackGetAt!int(varIndexOnFrame));
         }
     }
 
-    void store() {
-        
-        if (mDepth < 1) {
-            throw new VmError("Tried storing a local variable, but only global scope is available, use 'storeg'");
+    void loadFloat() {
+
+        int numOfArgs;
+        int startOfFrame;
+        int endOfFrame;
+
+        if (mDepth == 0) {
+            numOfArgs = 0;
+            startOfFrame = 0;
+            endOfFrame = mSp;
+        } else {
+            numOfArgs = stackGetAt!int(mFp - 2);
+            startOfFrame = mFp - 2 - numOfArgs;
+            endOfFrame = mSp;
         }
 
-        Variant value = pop();
+        if (mCurrInstruction.peekOperand!string) {
+            string var = mCurrInstruction.getOperand!string;
+            push!float(variablesGet!float(var, mDepth));
+        } else {
+            int varIndexOnFrame = mCurrInstruction.getOperand!int + startOfFrame;
+            if (varIndexOnFrame > endOfFrame) {
+                throw new VmError("Tried accessing a local variable index '"
+                    ~ to!string(varIndexOnFrame) ~ "' outside a frame that ends at '" ~ to!string(endOfFrame) ~ "'");
+            }
+            push!float(stackGetAt!float(varIndexOnFrame));
+        }
+    }
+
+    void loadLong() {
+
+        int numOfArgs;
+        int startOfFrame;
+        int endOfFrame;
+
+        if (mDepth == 0) {
+            numOfArgs = 0;
+            startOfFrame = 0;
+            endOfFrame = mSp;
+        } else {
+            numOfArgs = stackGetAt!int(mFp - 2);
+            startOfFrame = mFp - 2 - numOfArgs;
+            endOfFrame = mSp;
+        }
+
+        if (mCurrInstruction.peekOperand!string) {
+            string var = mCurrInstruction.getOperand!string;
+            push!long(variablesGet!long(var, mDepth));
+        } else {
+            int varIndexOnFrame = mCurrInstruction.getOperand!int + startOfFrame;
+            if (varIndexOnFrame > endOfFrame) {
+                throw new VmError("Tried accessing a local variable index '"
+                    ~ to!string(varIndexOnFrame) ~ "' outside a frame that ends at '" ~ to!string(endOfFrame) ~ "'");
+            }
+            push!long(stackGetAt!long(varIndexOnFrame));
+        }
+    }
+
+    // store
+    void storeInt() {
+
+        int value = pop!int;
         string var = mCurrInstruction.getOperand!string;
-        variablesAppend(var, value, mDepth);
+        variablesAppend!int(var, value, mDepth);
+    }
+
+    void storeFloat() {
+        float value = pop!float;
+        string var = mCurrInstruction.getOperand!string;
+        variablesAppend!float(var, value, mDepth);
+    }
+    
+    void storeLong() {
+        long value = pop!long;
+        string var = mCurrInstruction.getOperand!string;
+        variablesAppend!long(var, value, mDepth);
     }
 
     // halt
