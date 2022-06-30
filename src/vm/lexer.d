@@ -17,6 +17,7 @@ enum TokenType : string
     MULI = "muli", MULF = "mulf", MULL = "mull",
     CMPI = "cmpi", CMPF = "cmpf", CMPL = "cmpl",
     DECI = "deci", DECF = "decf", DECL = "decl",
+    INCI = "inci", INCF = "incf", INCL = "incl",
     LOADI = "loadi", LOADF = "loadf", LOADL = "loadl",
     STOREI = "storei", STOREF = "storef", STOREL = "storel",
 
@@ -210,6 +211,11 @@ class Lexer
                         case "deci": return new Token(TokenType.DECI, ident);
                         case "decf": return new Token(TokenType.DECF, ident);
                         case "decl": return new Token(TokenType.DECL, ident);
+
+                        // inc
+                        case "inci": return new Token(TokenType.INCI, ident);
+                        case "incf": return new Token(TokenType.INCF, ident);
+                        case "incl": return new Token(TokenType.INCL, ident);
                         
                         // bool
                         case "true": return new Token(TokenType.BOOL, true);

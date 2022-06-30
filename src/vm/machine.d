@@ -268,6 +268,11 @@ class Machine
                 case Opcode.DECF: decrementFloat(); break;
                 case Opcode.DECL: decrementLong(); break;
 
+                // inc
+                case Opcode.INCI: incrementInt(); break;
+                case Opcode.INCF: incrementFloat(); break;
+                case Opcode.INCL: incrementLong(); break;
+
                 // load
                 case Opcode.LOADI: loadInt(); break;
                 case Opcode.LOADF: loadFloat(); break;
@@ -501,6 +506,37 @@ class Machine
     void decrementLong() {
         long value = pop!long;
         --value;
+        push!long(value);
+    }
+
+    // inc
+    void incrementInt() {
+        int value = pop!int;
+        if (value >= int.max) {
+            throw new VmError("Inc 'int' overflow");
+        }
+
+        value++;
+        push!int(value);
+    }
+
+    void incrementFloat() {
+        float value = pop!float;
+        if (value >= float.max) {
+            throw new VmError("Inc 'float' overflow");
+        }
+
+        value++;
+        push!float(value);
+    }
+
+    void incrementLong() {
+        long value = pop!long;
+        if (value >= long.max) {
+            throw new VmError("Inc 'long' overflow");
+        }
+
+        value++;
         push!long(value);
     }
 

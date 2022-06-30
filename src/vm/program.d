@@ -410,6 +410,31 @@ class Generator
             return new Instruction(Opcode.DECL);            
         }
 
+        return generateIncInt();
+    }
+
+    // inc
+    Instruction generateIncInt() {
+        if (match(TokenType.INCI)) {
+            return new Instruction(Opcode.INCI);
+        }
+
+        return generateIncFloat();
+    }
+
+    Instruction generateIncFloat() {
+        if (match(TokenType.INCF)) {
+            return new Instruction(Opcode.INCF);
+        }
+
+        return generateIncLong();
+    }
+
+    Instruction generateIncLong() {
+        if (match(TokenType.INCL)) {
+            return new Instruction(Opcode.INCL);
+        }
+
         return generateLabel();
     }
 

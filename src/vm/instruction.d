@@ -20,6 +20,7 @@ enum Opcode : ubyte
     DIVI, DIVF, DIVL,
     
     DECI, DECF, DECL,
+    INCI, INCF, INCL,
     
     LOADI, LOADF, LOADL,
     STOREI, STOREF, STOREL,
