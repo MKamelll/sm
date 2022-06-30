@@ -562,6 +562,11 @@ class Machine
     void ret() {
         Variant returnValue = pop();
 
+        if (mDepth == 0) {
+            push(returnValue);
+            return;
+        }
+
         // set the stack pointer to the previous frame pointer
         mSp = mFp;
 
@@ -575,6 +580,10 @@ class Machine
         int numOfArgs = pop!int;
 
         for (int i = 0; i < numOfArgs; i++) pop();
+
+        foreach_reverse (Variable var; mVariables) {
+            if (var.getDepth() == mDepth) mVariables.popBack();
+        }
 
         push(returnValue);
 
