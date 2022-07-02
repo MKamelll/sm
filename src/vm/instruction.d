@@ -28,7 +28,7 @@ enum Opcode : ubyte
     CMPI, CMPF, CMPL,
 
     JMP, JE, JG, JL, JGE, JLE,
-    HALT, LABEL, CALL, RET
+    HALT, LABEL, CALL, TAIL, RET
 }
 
 class Instruction

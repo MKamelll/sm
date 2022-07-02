@@ -25,7 +25,7 @@ enum TokenType : string
     
     JMP = "jmp", JE = "je", JG = "jg", JL = "jl", JGE = "jge", JLE = "jle",
     
-    CALL = "call", RETURN = "ret", 
+    CALL = "call", TAIL = "tail", RETURN = "ret", 
 
     INT = "int", FLOAT = "float", LONG = "long", BOOL = "bool", STRING = "string",
     
@@ -233,6 +233,7 @@ class Lexer
 
                         // call, ret
                         case "call": return new Token(TokenType.CALL, ident);
+                        case "tail": return new Token(TokenType.TAIL, ident);
                         case "ret": return new Token(TokenType.RETURN, ident);
 
                         // halt                        

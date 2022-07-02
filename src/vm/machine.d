@@ -121,6 +121,10 @@ class Machine
             ~ "' expected type '" ~ to!string(typeid(T)) ~ "' instead got '" ~ to!string(elm.type) ~ "'");
     }
 
+    void stackSetAt(int index, Variant newVal) {
+        mStack[index] = newVal;
+    }
+
     void stackSetAt(T) (int index, T newVal) {
         try {
             mStack[index] = Variant(to!T(newVal));
@@ -288,6 +292,7 @@ class Machine
 
                 // call, return
                 case Opcode.CALL: call(); break;
+                case Opcode.TAIL: tailCall(); break;
                 case Opcode.RET: ret(); break;
                 
                 // halt
@@ -583,6 +588,32 @@ class Machine
         mIp = destination;
     }
 
+    // tail
+    void tailCall() {
+        CallPair callParameters = mCurrInstruction.getOperand!CallPair;
+
+        int destination;
+        if (callParameters.peekDestination!string) {
+            string label = callParameters.getDestination!string;
+            destination = labelsGet(label);
+        } else if (callParameters.peekDestination!int) {
+            destination = callParameters.getDestination!int;
+        }
+
+        int argsNum = callParameters.numOfArgs();
+
+        int startOfArgs = mFp - 3;
+        
+        for (int i = 0; i < argsNum; i++) {
+            Variant arg = pop();
+            stackSetAt(startOfArgs - i, arg);
+        }
+
+        mSp = mFp;
+
+        mIp = destination;
+    }
+
     // ret
     void ret() {
         Variant returnValue = pop();
@@ -705,7 +736,6 @@ class Machine
 
     // store
     void storeInt() {
-
         int value = pop!int;
         string var = mCurrInstruction.getOperand!string;
         variablesAppend!int(var, value, mDepth);
