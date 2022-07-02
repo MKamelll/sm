@@ -1,0 +1,21 @@
+fib:
+    loadi 2;
+    pushi 0;
+    cmpi;
+    jg 7;
+    loadi 0;
+    ret;
+    loadi 1;
+    loadi 1;
+    loadi 0;
+    addi;
+    loadi 2;
+    deci;
+    tail fib 3;
+    ret;
+main:
+    pushi 0;
+    pushi 1;
+    pushi 42;
+    call fib 3;
+    halt;
