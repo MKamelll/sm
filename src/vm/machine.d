@@ -616,7 +616,13 @@ class Machine
 
     // ret
     void ret() {
-        Variant returnValue = pop();
+        bool isReturnValue = false;
+        Variant returnValue;
+
+        if (mFp != mSp) {
+            isReturnValue = true;
+            returnValue = pop();
+        }
 
         if (mDepth == 0) {
             push(returnValue);
@@ -641,7 +647,9 @@ class Machine
             if (var.getDepth() == mDepth) mVariables.popBack();
         }
 
-        push(returnValue);
+        if (isReturnValue) {
+            push(returnValue);
+        }
 
         mDepth--;
     }
