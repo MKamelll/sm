@@ -1,14 +1,14 @@
 fib:
-    load 0;
+    loadi 0;
     pushi 2;
     cmpi;
     jg 7;
     pushi 1;
     ret;
-    load 0;
+    loadi 0;
     deci;
     call fib 1;
-    load 0;
+    loadi 0;
     deci;
     deci;
     call fib 1;

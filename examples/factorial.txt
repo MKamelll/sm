@@ -1,12 +1,12 @@
 fac:
-    load 0; 
+    loadi 0; 
     pushi 1;
     cmpi;
     jg 7;
     pushi 1;
     ret;
-    load 0;
-    load 0;
+    loadi 0;
+    loadi 0;
     deci;
     call fac 1;
     muli;
